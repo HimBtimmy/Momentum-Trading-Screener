@@ -1,0 +1,4 @@
+# Dependencies for tools/fetch_vti_universe.py
+requests>=2.31
+pandas>=2.0
+yfinance>=0.2.40        # only needed for --source yfinance (the default)
