@@ -184,7 +184,7 @@ export const SECTIONS = [
       { p: 'Dormancy is the feature. A stock nobody owns has no trapped supply overhead, so a genuine surprise ' +
            'forces institutions to build a position in the market rather than into sellers — which is why these ' +
            'gaps trend for weeks instead of filling. A gap on a stock that has already doubled is the opposite ' +
-           'trade: that is supply, and it is the failure case shown in SPCX below.' }
+           'trade: that is supply, and it is the failure case shown in SMLQ below.' }
     ]
   },
 
@@ -274,7 +274,7 @@ export const SECTIONS = [
       { scorecard: true },
       { callout: { kind: 'note', title: 'What the failures are for',
         text: 'HLTQ was a textbook setup that broke out one session before a market-wide risk-off day; nothing in ' +
-              'the process was wrong and it still lost {{HLTQ_R}} on a gap through the stop. SPCX was never eligible — ' +
+              'the process was wrong and it still lost {{HLTQ_R}} on a gap through the stop. SMLQ was never eligible — ' +
               'the screener rejected it on three separate criteria before the trade existed. Those are the two ' +
               'ways money is lost in this system: the unavoidable cost of a fixed-risk loss, and the entirely ' +
               'avoidable cost of overriding a filter.' } }

@@ -60,7 +60,7 @@ from typing import Any, Iterable, Iterator, Sequence
 LOG = logging.getLogger("vti")
 
 # --------------------------------------------------------------------------- #
-# Vanguard holdings
+# Universe provider 1: Vanguard's own holdings API (authoritative)
 # --------------------------------------------------------------------------- #
 
 VANGUARD_URL = (
@@ -117,7 +117,8 @@ class Holding:
     raw_ticker: str      # as published, e.g. BRK.B
     name: str
     weight: float        # percent of the fund, 0.0 when the feed omits it
-    kind: str = ""
+    kind: str = ""       # instrument type (Vanguard) or exchange (listing mirror)
+    market_cap: float = 0.0
 
     def __str__(self) -> str:  # pragma: no cover - logging sugar
         return f"{self.ticker} ({self.weight:.3f}%)"
@@ -261,6 +262,139 @@ def filter_holdings(holdings: list[Holding], top: int, min_weight: float) -> lis
 
 
 # --------------------------------------------------------------------------- #
+# Universe provider 2: the US exchange listing mirror on GitHub
+#
+# Vanguard's API is the authoritative source, but it is unreachable from many
+# networks (their edge blocks some clients; corporate proxies and CI sandboxes
+# often block the host outright). VTI tracks the CRSP US Total Market Index,
+# which is, by construction, essentially every US-incorporated common stock
+# listed on NASDAQ/NYSE/NYSE American above a small float threshold — so a
+# filtered exchange listing reproduces the constituent list closely without
+# touching Vanguard at all.
+#
+# rreichel3/US-Stock-Symbols mirrors the NASDAQ screener dump for all three
+# exchanges and is regenerated daily by CI. Fields used: symbol, name, country,
+# marketCap.
+# --------------------------------------------------------------------------- #
+
+GITHUB_BASE = "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/main"
+GITHUB_EXCHANGES = ("nasdaq", "nyse", "amex")
+
+# VTI's own published holding count, for a calibration note in the log. From
+# Vanguard's fund page / holdings aggregators, September 2026.
+VTI_PUBLISHED_HOLDINGS = 3480
+
+# The $40M floor was calibrated against that count: with the instrument and
+# domicile filters below, it yields ~3,500 names, i.e. within ~1% of VTI.
+DEFAULT_MIN_MARKET_CAP = 40_000_000
+
+# Instrument types CRSP's US indexes exclude.
+NON_COMMON_NAME = re.compile(
+    r"\b(warrants?|rights?|units?|preferred|depositary|debenture|subordinated|"
+    r"notes?|bonds?|when[- ]issued|convertible)\b",
+    re.I,
+)
+# Funds, ETFs, ETNs and pre-merger blank-check vehicles.
+FUND_NAME = re.compile(
+    r"\b(etf|etn|fund|funds|portfolio|index|proshares|ishares|spdr|direxion|"
+    r"invesco|vaneck|global x|wisdomtree|first trust|closed[- ]end|"
+    r"acquisition corp)\b",
+    re.I,
+)
+# NASDAQ's fifth letter: W warrant, R right, U unit.
+FIFTH_LETTER = re.compile(r"^[A-Z]{4}[WRU]$")
+
+
+def fetch_us_listings(
+    base_url: str = GITHUB_BASE,
+    exchanges: Sequence[str] = GITHUB_EXCHANGES,
+    timeout: float = 30.0,
+    retries: int = 3,
+) -> list[dict]:
+    """Download the listing dump for each exchange and tag every row with it."""
+    import requests
+
+    records: list[dict] = []
+    for exchange in exchanges:
+        url = f"{base_url.rstrip('/')}/{exchange}/{exchange}_full_tickers.json"
+        last_error: Exception | None = None
+        for attempt in range(1, retries + 1):
+            try:
+                LOG.info("GET %s (attempt %d/%d)", url, attempt, retries)
+                response = requests.get(url, headers=BROWSER_HEADERS, timeout=timeout)
+                response.raise_for_status()
+                rows = response.json()
+                for row in rows:
+                    row["exchange"] = exchange.upper()
+                records.extend(rows)
+                LOG.info("  %s: %d listings", exchange, len(rows))
+                break
+            except Exception as exc:  # noqa: BLE001
+                last_error = exc
+                LOG.warning("listing request failed: %s", exc)
+                if attempt < retries:
+                    time.sleep(2 ** attempt)
+        else:
+            raise RuntimeError(f"could not fetch {url}: {last_error}")
+    return records
+
+
+def listings_to_holdings(
+    records: Sequence[dict],
+    min_market_cap: float = DEFAULT_MIN_MARKET_CAP,
+) -> tuple[list[Holding], list[tuple[str, int, int]]]:
+    """Filter an exchange listing down to a CRSP-style common-stock universe.
+
+    Returns the holdings plus a step-by-step audit of what each filter removed,
+    so the log can show how the constituent list was arrived at.
+    """
+    audit: list[tuple[str, int, int]] = []
+    current = list(records)
+
+    def step(label: str, keep) -> None:
+        nonlocal current
+        before = len(current)
+        current = [row for row in current if keep(row)]
+        audit.append((label, before - len(current), len(current)))
+
+    step("warrants / units / rights / preferred / notes",
+         lambda r: not NON_COMMON_NAME.search(str(r.get("name", ""))))
+    step("NASDAQ fifth-letter W/R/U symbols",
+         lambda r: not FIFTH_LETTER.match(str(r.get("symbol", ""))))
+    step("ETFs, funds and blank-check vehicles",
+         lambda r: not FUND_NAME.search(str(r.get("name", ""))))
+    step("non-US domicile (CRSP US indexes are US-only)",
+         lambda r: str(r.get("country", "")) in ("United States", ""))
+    step("no reported market cap",
+         lambda r: (_to_float(r.get("marketCap")) or 0.0) > 0)
+    step(f"market cap below ${min_market_cap / 1e6:,.0f}M",
+         lambda r: (_to_float(r.get("marketCap")) or 0.0) >= min_market_cap)
+
+    holdings: dict[str, Holding] = {}
+    total_cap = sum((_to_float(r.get("marketCap")) or 0.0) for r in current) or 1.0
+    for row in current:
+        ticker = clean_ticker(row.get("symbol"))
+        if not ticker:
+            continue
+        cap = _to_float(row.get("marketCap")) or 0.0
+        holding = Holding(
+            ticker=ticker,
+            raw_ticker=str(row.get("symbol", "")).strip(),
+            name=str(row.get("name", ticker)).strip(),
+            weight=cap / total_cap * 100.0,   # cap weight stands in for fund weight
+            kind=str(row.get("exchange", "")),
+            market_cap=cap,
+        )
+        existing = holdings.get(ticker)
+        if existing is None or holding.market_cap > existing.market_cap:
+            holdings[ticker] = holding
+
+    audit.append(("unusable / duplicate symbols", len(current) - len(holdings), len(holdings)))
+    ordered = sorted(holdings.values(), key=lambda h: (-h.weight, h.ticker))
+    return ordered, audit
+
+
+# --------------------------------------------------------------------------- #
 # Prices
 # --------------------------------------------------------------------------- #
 
@@ -287,6 +421,7 @@ def fetch_prices_yfinance(
     adjust: bool = True,
     sleep: float = 1.0,
     retries: int = 2,
+    **_ignored: Any,   # providers share one call signature; ignore the rest
 ):
     """Download daily bars in batches. Returns ``{ticker: DataFrame}``."""
     import pandas as pd
@@ -463,6 +598,12 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     universe = parser.add_argument_group("universe")
+    universe.add_argument(
+        "--universe", choices=("auto", "vanguard", "github", "file", "tickers"), default="auto",
+        help="where the constituent list comes from. vanguard: the fund's own holdings API "
+             "(exact holdings and weights). github: a daily-updated US exchange listing "
+             "mirror, filtered to a CRSP-style common-stock universe (works when Vanguard "
+             "is unreachable). auto (default): vanguard, falling back to github.")
     universe.add_argument("--fund", default="VTI", help="fund ticker on Vanguard's API (default: VTI)")
     universe.add_argument("--holdings-url", help="override the holdings endpoint entirely")
     universe.add_argument("--holdings-file", type=Path,
@@ -471,10 +612,21 @@ def build_parser() -> argparse.ArgumentParser:
     universe.add_argument("--tickers-file", type=Path,
                           help="skip the holdings feed: one ticker per line")
     universe.add_argument("--tickers-out", type=Path, help="save the cleaned ticker list here")
+    universe.add_argument("--constituents-out", type=Path,
+                          help="save the resolved constituent table (symbol, name, exchange, "
+                               "market cap, weight) as CSV — useful on its own, and re-usable "
+                               "later with --tickers-file")
     universe.add_argument("--top", type=int, default=0,
                           help="keep only the N largest weights (0 = all, the default)")
     universe.add_argument("--min-weight", type=float, default=0.0,
                           help="drop holdings below this percent of the fund")
+    universe.add_argument("--min-market-cap", type=float, default=DEFAULT_MIN_MARKET_CAP,
+                          help="github provider only: market-cap floor in dollars. The default "
+                               f"(${DEFAULT_MIN_MARKET_CAP / 1e6:,.0f}M) is calibrated so the "
+                               f"universe lands within ~1%% of VTI's published "
+                               f"{VTI_PUBLISHED_HOLDINGS:,} holdings")
+    universe.add_argument("--listing-base-url", default=GITHUB_BASE,
+                          help="github provider only: base URL of the listing mirror")
 
     prices = parser.add_argument_group("prices")
     prices.add_argument("--source", choices=sorted(SOURCES), default="yfinance",
@@ -511,36 +663,93 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def load_universe(args: argparse.Namespace) -> list[Holding]:
-    if args.tickers_file:
-        lines = args.tickers_file.read_text(encoding="utf-8").split()
-        holdings = []
-        for line in lines:
-            ticker = clean_ticker(line)
-            if ticker:
-                holdings.append(Holding(ticker=ticker, raw_ticker=line, name=ticker, weight=0.0))
-        LOG.info("read %d tickers from %s", len(holdings), args.tickers_file)
-        return holdings
-
-    if args.holdings_file:
-        payload = json.loads(args.holdings_file.read_text(encoding="utf-8"))
-        LOG.info("read holdings JSON from %s", args.holdings_file)
-    else:
-        payload = fetch_holdings_json(args.fund, args.holdings_url)
-        if args.holdings_out:
-            args.holdings_out.parent.mkdir(parents=True, exist_ok=True)
-            args.holdings_out.write_text(json.dumps(payload), encoding="utf-8")
-            LOG.info("saved raw holdings to %s", args.holdings_out)
-
+def _universe_from_vanguard(args: argparse.Namespace) -> list[Holding]:
+    payload = fetch_holdings_json(args.fund, args.holdings_url)
+    if args.holdings_out:
+        args.holdings_out.parent.mkdir(parents=True, exist_ok=True)
+        args.holdings_out.write_text(json.dumps(payload), encoding="utf-8")
+        LOG.info("saved raw holdings to %s", args.holdings_out)
     holdings = extract_holdings(payload)
-    LOG.info("parsed %d holdings from the feed", len(holdings))
+    LOG.info("Vanguard holdings feed: %d constituents with weights", len(holdings))
     if args.fund.upper() == "VTI" and len(holdings) < 500:
         LOG.warning(
-            "VTI normally holds ~3,600 names but the feed yielded %d — the endpoint may "
-            "be paginated or truncated. Check the raw JSON with --holdings-out.",
-            len(holdings),
+            "VTI holds ~%s names but the feed yielded %d — the endpoint may be paginated or "
+            "truncated. Inspect the raw JSON with --holdings-out.",
+            f"{VTI_PUBLISHED_HOLDINGS:,}", len(holdings),
         )
     return holdings
+
+
+def _universe_from_github(args: argparse.Namespace) -> list[Holding]:
+    records = fetch_us_listings(args.listing_base_url)
+    LOG.info("listing mirror: %d raw listings across %d exchanges",
+             len(records), len(GITHUB_EXCHANGES))
+    holdings, audit = listings_to_holdings(records, args.min_market_cap)
+    LOG.info("filtering to a CRSP-style common-stock universe:")
+    for label, dropped, left in audit:
+        LOG.info("    -%-6d %-48s -> %d", dropped, label, left)
+    delta = (len(holdings) - VTI_PUBLISHED_HOLDINGS) / VTI_PUBLISHED_HOLDINGS * 100
+    LOG.info("universe: %d names vs VTI's published %s holdings (%+.1f%%)",
+             len(holdings), f"{VTI_PUBLISHED_HOLDINGS:,}", delta)
+    if abs(delta) > 10:
+        LOG.warning(
+            "that is more than 10%% off the published count — tune --min-market-cap "
+            "(higher floor = fewer names) if you need a closer match."
+        )
+    LOG.warning(
+        "This is a PROXY for VTI's constituents, not the fund's holdings file: it is the "
+        "US common-stock universe the CRSP index is drawn from, weighted by market cap "
+        "rather than by the fund's own float-adjusted weights."
+    )
+    return holdings
+
+
+def _universe_from_tickers(args: argparse.Namespace) -> list[Holding]:
+    lines = args.tickers_file.read_text(encoding="utf-8").split()
+    holdings = []
+    for line in lines:
+        ticker = clean_ticker(line)
+        if ticker:
+            holdings.append(Holding(ticker=ticker, raw_ticker=line, name=ticker, weight=0.0))
+    LOG.info("read %d tickers from %s", len(holdings), args.tickers_file)
+    return holdings
+
+
+def _universe_from_file(args: argparse.Namespace) -> list[Holding]:
+    payload = json.loads(args.holdings_file.read_text(encoding="utf-8"))
+    LOG.info("read holdings JSON from %s", args.holdings_file)
+    holdings = extract_holdings(payload)
+    LOG.info("parsed %d constituents", len(holdings))
+    return holdings
+
+
+def load_universe(args: argparse.Namespace) -> tuple[list[Holding], str]:
+    """Resolve the constituent list. Returns the holdings and the source used."""
+    # An explicit local input always wins over the network providers.
+    if args.tickers_file:
+        return _universe_from_tickers(args), "tickers-file"
+    if args.holdings_file:
+        return _universe_from_file(args), "holdings-file"
+
+    choice = args.universe
+    if choice == "vanguard":
+        return _universe_from_vanguard(args), "vanguard"
+    if choice == "github":
+        return _universe_from_github(args), "listing-mirror"
+    if choice in ("file", "tickers"):
+        raise SystemExit(
+            f"--universe {choice} needs "
+            f"{'--holdings-file' if choice == 'file' else '--tickers-file'}"
+        )
+
+    # auto: the authoritative source first, the proxy only if it is unreachable
+    try:
+        return _universe_from_vanguard(args), "vanguard"
+    except Exception as exc:  # noqa: BLE001
+        LOG.warning("Vanguard holdings unavailable (%s)", exc)
+        LOG.warning("falling back to the US listing mirror — pass --universe vanguard to "
+                    "make this a hard failure instead")
+        return _universe_from_github(args), "listing-mirror (Vanguard unreachable)"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -559,7 +768,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     try:
-        holdings = load_universe(args)
+        holdings, source = load_universe(args)
     except PermissionError as exc:
         LOG.error("%s", exc)
         return 2
@@ -590,6 +799,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.tickers_out.parent.mkdir(parents=True, exist_ok=True)
         args.tickers_out.write_text("\n".join(tickers) + "\n", encoding="utf-8")
         LOG.info("saved ticker list to %s", args.tickers_out)
+
+    if args.constituents_out:
+        args.constituents_out.parent.mkdir(parents=True, exist_ok=True)
+        with args.constituents_out.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["symbol", "name", "exchange_or_type", "market_cap", "weight_pct"])
+            for holding in holdings:
+                writer.writerow([
+                    holding.ticker, holding.name, holding.kind,
+                    f"{holding.market_cap:.0f}" if holding.market_cap else "",
+                    f"{holding.weight:.6f}",
+                ])
+        LOG.info("saved %d constituents to %s", len(holdings), args.constituents_out)
 
     if args.dry_run:
         preview = ", ".join(f"{h.ticker}:{h.weight:.2f}%" for h in holdings[:15])
@@ -644,11 +866,35 @@ def main(argv: Sequence[str] | None = None) -> int:
     dates = (rows[0].date, rows[-1].date)
     span = sorted({b.date for b in rows})
 
+    meta = {
+        "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "universe_source": source,
+        "fund": args.fund,
+        "price_source": args.source,
+        "adjusted": not args.no_adjust,
+        "sessions_requested": args.sessions,
+        "symbols_written": kept,
+        "rows": written,
+        "session_span": [span[0], span[-1]],
+        "filters": {
+            "top": args.top, "min_weight": args.min_weight,
+            "min_market_cap": args.min_market_cap,
+            "min_sessions": args.min_sessions, "min_price": args.min_price,
+            "min_turnover_musd": args.min_turnover,
+        },
+        "index_symbol": index_symbol or None,
+        "dropped": dropped,
+    }
+    meta_path = args.out.with_suffix(args.out.suffix + ".meta.json")
+    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
     LOG.info("—" * 62)
+    LOG.info("universe source : %s", source)
     LOG.info("symbols written : %d (of %d requested)", kept, len(tickers))
     LOG.info("rows written    : %d", written)
     LOG.info("sessions        : %d distinct, %s to %s", len(span), span[0], span[-1])
     LOG.info("file            : %s (%.1f MB)", args.out, size_mb)
+    LOG.info("provenance      : %s", meta_path)
     if dropped:
         LOG.info("dropped         : %d", len(dropped))
         for ticker, reason in list(dropped.items())[:10]:

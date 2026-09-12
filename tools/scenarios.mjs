@@ -127,7 +127,7 @@ export const CASES = [
 
   /* ==================================================== 5. EP FAILURE ==== */
   {
-    symbol: 'SPCX', name: 'Small-cap momentum name (archetype)',
+    symbol: 'SMLQ', name: 'Small-cap momentum name (archetype)',
     sector: 'Industrials', setupLabel: 'Episodic pivot',
     outcomeLabel: 'LOSS (and a screen reject)', seed: 55407, startPrice: 8.6, baseVolume: 1.6e6, marketCap: 0.9e9,
     triggerDate: '2026-08-11',
@@ -212,7 +212,7 @@ export const UNIVERSE = [
       S('drift', '2026-05-01', '2026-08-21', { gainPct: 86, adr: 7.8, vol: 1.5 }),
       S('base',  '2026-08-24', '2026-09-11', { depthPct: 14, adrStart: 7.8, adrEnd: 5.6, vol: 0.6, liftPct: 0.68 })
     ] },
-  { symbol: 'GRDX', name: 'Capital goods', sector: 'Industrials', seed: 605,
+  { symbol: 'INDQ', name: 'Capital goods', sector: 'Industrials', seed: 605,
     startPrice: 74, baseVolume: 1.1e6, marketCap: 9e9, note: 'lower-ADR but valid',
     segments: [
       S('drift', '2025-06-02', '2026-02-27', { gainPct: 16, adr: 3.4, vol: 0.9 }),

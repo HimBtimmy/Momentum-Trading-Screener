@@ -57,13 +57,45 @@ Then open the screener → **Import CSV** → pick the file.
 
 What it does:
 
-1. **Universe** — GETs Vanguard's own profile API
-   (`investor.vanguard.com/investment-products/etfs/profile/api/VTI/portfolio-holding/stock`)
-   with browser headers, then parses the holdings array *shape-tolerantly* — it finds the
-   largest list of objects carrying a ticker-like key rather than hard-coding a JSON path,
-   so a change to the response envelope does not break it. Class-share tickers are
-   normalised for price vendors (`BRK.B` → `BRK-B`), and cash, futures and placeholder
-   lines are dropped.
+1. **Universe** — resolves the constituent list through one of two providers
+   (`--universe`, default `auto`):
+
+   * **`vanguard`** — the fund's own holdings API,
+     `investor.vanguard.com/investment-products/etfs/profile/api/VTI/portfolio-holding/stock`,
+     requested with browser headers. This is the authoritative source: exact holdings with
+     the fund's own float-adjusted weights. The holdings array is parsed
+     *shape-tolerantly* — the script finds the largest list of objects carrying a
+     ticker-like key rather than hard-coding a JSON path, so a change to the response
+     envelope does not break it.
+   * **`github`** — a daily-rebuilt mirror of the NASDAQ/NYSE/NYSE-American listing dump
+     ([rreichel3/US-Stock-Symbols](https://github.com/rreichel3/US-Stock-Symbols)),
+     filtered down to a CRSP-style common-stock universe. VTI tracks the **CRSP US Total
+     Market Index**, which by construction is essentially every US-incorporated common
+     stock listed on those three exchanges above a small float threshold — so the filtered
+     listing reproduces the constituent list closely without touching Vanguard.
+   * **`auto`** tries Vanguard first and falls back to the mirror, saying loudly that it
+     did. `--universe vanguard` makes an unreachable Vanguard a hard failure instead.
+
+   The `github` filter chain, and what each step removes from the 7,162 raw listings:
+
+   | step | dropped | left |
+   |---|---|---|
+   | warrants / units / rights / preferred / notes | 1,559 | 5,603 |
+   | NASDAQ fifth-letter W/R/U symbols | 1 | 5,602 |
+   | ETFs, funds and blank-check vehicles | 431 | 5,171 |
+   | non-US domicile (CRSP US indexes are US-only) | 1,025 | 4,146 |
+   | no reported market cap | 162 | 3,984 |
+   | market cap below $40M (`--min-market-cap`) | 483 | 3,501 |
+   | unusable / duplicate symbols | 1 | **3,500** |
+
+   VTI publishes **3,480** holdings (September 2026), so the proxy lands **+0.6%** off.
+   The $40M floor is calibrated to that count; raise it for fewer names, drop it to 0 to
+   keep every listed common stock. Two caveats: weights are **market-cap** weights, not
+   the fund's float-adjusted ones, and both classes of a dual-class company can appear
+   where the fund holds only the liquid one. Neither matters for screening — weights only
+   drive `--top` ordering — and the price-stage liquidity gate removes most of the
+   difference.
+
 2. **Prices** — batches of 100 tickers from yfinance (default, no key) or one-by-one from
    Stooq (`--source stooq`), retried with backoff, trimmed to the last `--sessions` (252)
    clean bars. Bars are split- and dividend-adjusted by default, because an unadjusted
@@ -76,22 +108,45 @@ What it does:
 4. **Index** — appends `SPY` (`--index`), exempt from the gates, because the screener
    treats SPY/QQQ/IWM as the market-regime series rather than a candidate.
 
-It prints a report: symbols written, rows, the session span, file size, and every dropped
-symbol with its reason.
+It prints a report: the universe source, symbols written, rows, the session span, file
+size, and every dropped symbol with its reason, and writes a `<out>.meta.json` sidecar
+recording the provenance, the filters used and the drop list.
+
+### The constituent snapshot in this repository
+
+`data/vti-constituents.csv` is a committed snapshot of the resolved universe — 3,500
+symbols with names, exchange, market cap and cap weight, dated 12 September 2026. Re-run
+
+```bash
+python3 tools/fetch_vti_universe.py --universe github --dry-run \
+    --constituents-out data/vti-constituents.csv
+```
+
+to refresh it, or feed it straight to the price stage without re-resolving the universe:
+
+```bash
+cut -d, -f1 data/vti-constituents.csv | tail -n +2 > /tmp/tickers.txt
+python3 tools/fetch_vti_universe.py --tickers-file /tmp/tickers.txt --out data/vti-universe.csv
+```
 
 If the holdings request fails — Vanguard's edge blocks some clients, and corporate proxies
 and VPNs block the host outright — the script says so and names the fallback: open the
 endpoint in a browser, save the JSON, and pass `--holdings-file saved.json`. A plain
 `--tickers-file symbols.txt` also works and skips Vanguard entirely.
 
-**What was and was not verified.** The holdings parser, ticker normalisation, weight
-filters, bar validation, session trimming, quality gates, CSV writing and the full CLI
-were tested offline against fixtures, and the resulting CSV was round-tripped through this
-repository's own engine (`QM.parseCSV` → `QM.screen`) to confirm the screener reads it and
-picks SPY up as the index. The two **network** calls — Vanguard's API and the price
-vendors — could not be exercised here, because this environment's egress policy blocks
-`investor.vanguard.com` and every quote host. Expect to adjust the vendor adapters if a
-response shape has moved.
+**What was and was not verified.** The `github` universe provider was exercised against
+live data: it resolved 3,500 real constituents with current market caps (NVDA 6.11%,
+AAPL 5.63%, GOOGL 4.81% …), which is how the filter chain above was calibrated. The
+holdings parser, ticker normalisation, weight filters, bar validation, session trimming,
+quality gates, CSV writing and the full CLI were tested offline against fixtures, and a
+generated CSV was round-tripped through this repository's own engine (`QM.parseCSV` →
+`QM.screen`) to confirm the screener reads it and picks SPY up as the index.
+
+Two things could **not** be exercised here, because this environment's egress policy
+blocks the hosts: Vanguard's own API (`investor.vanguard.com` — 403 at the gateway, which
+is exactly why the `github` provider exists) and every price vendor (Yahoo and Stooq both
+403). The `vanguard` provider's fallback paths are tested; its happy path is not. Both
+price providers fail with an actionable error rather than a traceback.
 
 ### CSV import (the manual route, works everywhere, including the published artifact)
 

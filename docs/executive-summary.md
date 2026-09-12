@@ -119,7 +119,7 @@ An episodic pivot is not a chart pattern, it is a **change in the facts**. A sto
 | Entry | Break of the 1-minute opening-range high, adding on the 5-minute high |
 | Stop | The low of the day (in practice, the opening-range low), within 1–1.5× ADR |
 
-Dormancy is the feature. A stock nobody owns has no trapped supply overhead, so a genuine surprise forces institutions to build a position in the market rather than into sellers — which is why these gaps trend for weeks instead of filling. A gap on a stock that has already doubled is the opposite trade: that is supply, and it is the failure case shown in SPCX below.
+Dormancy is the feature. A stock nobody owns has no trapped supply overhead, so a genuine surprise forces institutions to build a position in the market rather than into sellers — which is why these gaps trend for weeks instead of filling. A gap on a stock that has already doubled is the opposite trade: that is supply, and it is the failure case shown in SMLQ below.
 
 ## Parabolic shorts: patience, then the first crack
 
@@ -262,13 +262,13 @@ Health care was one of the June 2026 leadership groups as money left tech. This 
 
 ---
 
-### SPCX — Episodic pivot · LOSER -1.00R
+### SMLQ — Episodic pivot · LOSER -1.00R
 
 *Small-cap momentum name (archetype). Trigger 2026-08-11. ADR 7.0%. Entry 8.45 · stop 8.21 · risk 2.82% (0.40× ADR) · max favourable excursion 0.8R.*
 
 Mid-August 2026 looked benign — the VIX printed its 2026 low of 14.2 on 17 August with the indices at record highs — but single-stock volatility was at a record spread to index volatility. Quiet index, violent individual names: the exact tape in which a weak gap gets sold.
 
-**Why it was flagged.** SPCX trades at $7.93 with a 7% ADR (leader-grade) and $14.1M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. This is an episodic pivot, not a chart pattern: SPCX gapped 14% on 2026-08-11 on 1.6x its average volume, after spending the prior 90 sessions in a 55.2% range. Dormancy is the feature, not a bug - the best EPs come out of stocks nobody was watching, because the gap forces a repricing that institutions then have to chase for weeks. It closed in the top 82% of the gap day's range, so buyers held the gap into the bell rather than selling it. It is up 6.7% over one month, 4.3% over three and 58% over six, and it sits 13.5% off its 52-week high. Levels come from the opening range of 2026-08-11 (ORH 8.44 / ORL 8.21); the full day spans 1.6 ADRs, which is why the opening range, not the day, defines the risk.
+**Why it was flagged.** SMLQ trades at $7.93 with a 7% ADR (leader-grade) and $14.1M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. This is an episodic pivot, not a chart pattern: SMLQ gapped 14% on 2026-08-11 on 1.6x its average volume, after spending the prior 90 sessions in a 55.2% range. Dormancy is the feature, not a bug - the best EPs come out of stocks nobody was watching, because the gap forces a repricing that institutions then have to chase for weeks. It closed in the top 82% of the gap day's range, so buyers held the gap into the bell rather than selling it. It is up 6.7% over one month, 4.3% over three and 58% over six, and it sits 13.5% off its 52-week high. Levels come from the opening range of 2026-08-11 (ORH 8.44 / ORL 8.21); the full day spans 1.6 ADRs, which is why the opening range, not the day, defines the risk.
 
 **The plan.** Entry: Buy-stop on a break of the opening-range high (1-min, then add on the 5-min ORH) once price clears 8.44. Reference level $8.45. Stop: $8.21 - Hard stop at the low of the entry day (structural low 8.21). That is 2.8% of price, 0.4x ADR. Targets: 3R at $9.16, 5R at $9.64; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 2,096 shares ($17.7K, 17.7% of equity) risks $499.77 = 0.5% of the account.
 
@@ -280,7 +280,7 @@ Mid-August 2026 looked benign — the VIX printed its 2026 low of 14.2 on 17 Aug
 
 **Lesson.** Three criteria failed before the trade was ever taken. Volume was 1.6x average, not the 3x+ the setup demands; the stock was not dormant — it had round-tripped inside a 55%-wide range, leaving trapped supply at every level above; and it closed in the bottom fifth of the gap day's range, meaning the buyers who created the gap were gone by the bell. The screener rejects it outright. Traded anyway, it lost the opening range the same session for a clean −1R.
 
-*Chart: see [docs/executive-summary.html](executive-summary.html#case-SPCX).*
+*Chart: see [docs/executive-summary.html](executive-summary.html#case-SMLQ).*
 
 The scorecard below is the point of the whole document. Two of five trades lost. The five together returned **+23.59R**, and one trade produced 51% of it. At 0.5% risk per trade that is a +11.8% account gain from a sample in which the majority of positions were closed at a loss.
 
@@ -290,12 +290,12 @@ The scorecard below is the point of the whole document. Two of five trades lost.
 | NRGX | Episodic pivot | 2026-07-22 | 0.56× | +8.76R | 14.4R | 4.38% |
 | ADVX | Parabolic short | 2026-08-10 | 0.51× | +5.28R | 6.7R | 2.64% |
 | HLTQ | Breakout | 2026-07-23 | 0.39× | -1.52R | 0.0R | -0.76% |
-| SPCX | Episodic pivot | 2026-08-11 | 0.40× | -1.00R | 0.8R | -0.50% |
+| SMLQ | Episodic pivot | 2026-08-11 | 0.40× | -1.00R | 0.8R | -0.50% |
 | **Total** | | | | **+23.59R** | | **+11.8%** |
 
 > **What the failures are for**
 >
-> HLTQ was a textbook setup that broke out one session before a market-wide risk-off day; nothing in the process was wrong and it still lost 1.52R on a gap through the stop. SPCX was never eligible — the screener rejected it on three separate criteria before the trade existed. Those are the two ways money is lost in this system: the unavoidable cost of a fixed-risk loss, and the entirely avoidable cost of overriding a filter.
+> HLTQ was a textbook setup that broke out one session before a market-wide risk-off day; nothing in the process was wrong and it still lost 1.52R on a gap through the stop. SMLQ was never eligible — the screener rejected it on three separate criteria before the trade existed. Those are the two ways money is lost in this system: the unavoidable cost of a fixed-risk loss, and the entirely avoidable cost of overriding a filter.
 
 ## What the screener does with all this
 

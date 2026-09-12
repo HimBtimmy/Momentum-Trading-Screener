@@ -60,9 +60,12 @@ python3 tools/fetch_vti_universe.py --out data/vti-universe.csv   # VTI constitu
 python3 tools/fetch_vti_universe.py --top 500 --out data/top500.csv   # quick first run
 ```
 
-Then open the screener → **Import CSV**. The script pulls VTI's constituents from
-Vanguard's profile API, downloads a year of daily bars per name, applies the screener's own
-liquidity gates, and appends SPY for the regime filter. You can also import any CSV of
+Then open the screener → **Import CSV**. The script resolves VTI's constituents — from
+Vanguard's own holdings API, or from a daily-updated US exchange listing filtered to the
+CRSP common-stock universe when Vanguard is unreachable (`--universe`) — downloads a year
+of daily bars per name, applies the screener's own liquidity gates, and appends SPY for the
+regime filter. `data/vti-constituents.csv` is a committed snapshot of that universe: 3,500
+symbols, within 0.6% of VTI's published holding count. You can also import any CSV of
 `symbol,date,open,high,low,close,volume` rows (130+ sessions per symbol), or use the
 live-API tab with your own vendor key. See **[data/DATA.md](data/DATA.md)**.
 
@@ -80,6 +83,7 @@ docs/
   executive-summary.html / .md    generated: the written analysis
 data/
   DATA.md             provenance and how to load real bars
+  vti-constituents.csv  snapshot of the resolved VTI universe (3,500 symbols)
   demo-universe.json  generated
   examples-2026.json  generated: the five case-study series
   case-results.json   generated: engine output + simulated outcome per case

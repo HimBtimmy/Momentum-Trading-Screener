@@ -1,5 +1,7 @@
 # Generated price CSVs — rebuild them with tools/fetch_vti_universe.py
 data/*.csv
+# ...but the resolved universe snapshot is small and worth keeping
+!data/vti-constituents.csv
 data/holdings-*.json
 data/tickers-*.txt
 
