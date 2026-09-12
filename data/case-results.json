@@ -1,0 +1,868 @@
+[
+  {
+    "symbol": "MEMQ",
+    "name": "Memory / storage momentum leader (archetype)",
+    "sector": "Semiconductors",
+    "setupLabel": "Breakout (continuation flag)",
+    "outcomeLabel": "WIN",
+    "context": "The dominant theme of 2026 was the memory shortage — DRAM/NAND names led every momentum list in the real tape. June 2026 was a down month for tech (Nasdaq −2.8%), which is exactly what turns a vertical leg into a tradeable flag: the leader stops going up but refuses to break, while the index does the correcting for it.",
+    "lesson": "The A+ version of the setup: a real leg, a month of orderly digestion on drying volume while the index corrected, then a range expansion out of a 4%-deep pivot area. Risk was 0.55 ADR, so one ADR of follow-through paid roughly 2R.",
+    "triggerDate": "2026-07-02",
+    "triggerIdx": 272,
+    "wanted": "breakout",
+    "metrics": {
+      "price": 54.56,
+      "adr": 5.68396702530094,
+      "dollarVol20": 90043600.4955,
+      "avgVol20": 1769699.25,
+      "ret1m": 9.51425130469692,
+      "ret3m": 115.39676273193842,
+      "ret6m": 162.56015399422523,
+      "pctOff52High": 1.9586702605570463,
+      "rsi14": 74.05636211268322,
+      "ema10": 50.85696271931456,
+      "ema20": 49.822399317888724,
+      "sma50": 46.55599999999997,
+      "sma200": 28.87619999999999
+    },
+    "setup": {
+      "type": "breakout",
+      "status": "triggered",
+      "eligible": true,
+      "score": 84.91253168855287,
+      "pivot": 52.87,
+      "base": {
+        "startDate": "2026-05-20",
+        "endDate": "2026-07-01",
+        "len": 29,
+        "high": 52.87,
+        "low": 46.6,
+        "depthPct": 11.859277473047088,
+        "depthCapPct": 24.639849546443273,
+        "higherLows": true,
+        "lowsSlopePct": 0.34334763948498104,
+        "contraction": 0.6375400516064182,
+        "volRatio": 0.4556063187699926,
+        "aboveSma50Frac": 1,
+        "nearEmaFrac": 0.5862068965517241,
+        "quality": 79.66418859698787,
+        "leg": {
+          "pct": 112.85831285831284,
+          "startIdx": 202,
+          "startPrice": 24.42,
+          "peak": 51.98,
+          "bars": 41,
+          "startDate": "2026-03-23"
+        }
+      },
+      "rvol": 7.041313181437294,
+      "checks": [
+        {
+          "label": "Price >= $5",
+          "pass": true,
+          "detail": "$54.56"
+        },
+        {
+          "label": "ADR% >= 3.5%",
+          "pass": true,
+          "detail": "5.7% (leader-grade)"
+        },
+        {
+          "label": "Turnover >= $5M/day",
+          "pass": true,
+          "detail": "$90M"
+        },
+        {
+          "label": "Prior leg >= 30%",
+          "pass": true,
+          "detail": "112.9% in 41 sessions from 2026-03-23"
+        },
+        {
+          "label": "Consolidation 5-60 sessions",
+          "pass": true,
+          "detail": "29 sessions, 2026-05-20 to 2026-07-01"
+        },
+        {
+          "label": "Depth tight for its ADR",
+          "pass": true,
+          "detail": "11.9% deep vs 24.6% allowed"
+        },
+        {
+          "label": "Higher lows",
+          "pass": true,
+          "detail": "+0.3% back-half vs front-half low"
+        },
+        {
+          "label": "Range contracting",
+          "pass": true,
+          "detail": "0.64x last-third vs first-third range"
+        },
+        {
+          "label": "Volume drying up",
+          "pass": true,
+          "detail": "0.46x the volume of the advance"
+        },
+        {
+          "label": "Surfing rising MAs",
+          "pass": true,
+          "detail": "100% of base above the 50MA, 59% hugging the 20EMA"
+        },
+        {
+          "label": "Not a deep retrace of the leg",
+          "pass": true,
+          "detail": "22% of the leg given back"
+        },
+        {
+          "label": "Breakout on volume expansion",
+          "pass": true,
+          "detail": "7x average volume on the 2026-07-02 breakout, 1.6x range expansion"
+        },
+        {
+          "label": "Entry not extended",
+          "pass": true,
+          "detail": "3.2% above the pivot (0.6 ADRs)"
+        }
+      ],
+      "failing": []
+    },
+    "allSetups": {
+      "breakout": {
+        "eligible": true,
+        "status": "triggered",
+        "score": 84.91253168855287,
+        "reason": null,
+        "failing": []
+      },
+      "ep": {
+        "eligible": false,
+        "status": null,
+        "score": 0,
+        "reason": "no >=10% gap in the last 3 sessions",
+        "failing": []
+      },
+      "parabolic": {
+        "eligible": false,
+        "status": "watch",
+        "score": 15.633598326531517,
+        "reason": null,
+        "failing": [
+          "Up 3+ days in a row",
+          "Parabolic move >= 50%",
+          ">= 3 ADRs above the 20EMA",
+          "RSI(14) >= 75",
+          "First sign of weakness"
+        ]
+      }
+    },
+    "justification": "MEMQ trades at $54.56 with a 5.7% ADR (leader-grade) and $90M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. It is up 9.5% over one month, 115.4% over three and 162.6% over six, and it sits 2% off its 52-week high. The pattern is the textbook continuation setup: a 112.9% advance over 41 sessions beginning 2026-03-23, followed by 29 sessions of orderly consolidation since 2026-05-20. That base is only 11.9% deep against the 24.6% its ADR would allow, lows are rising (+0.3% back-half vs front-half), the daily range has contracted to 0.64x what it was at the start of the base, and volume has dried up to 0.46x the volume of the advance. Price spent 100% of the base above a rising 50-day MA while hugging the 20-day EMA - the \"surfing\" behaviour that marks institutional accumulation rather than distribution. It cleared the 52.87 pivot on 2026-07-02 on 7x average volume with a 1.6x range expansion, which is the trigger.",
+    "planText": "Entry: Buy-stop on a break of the 1-min / 5-min / 60-min opening-range high once price clears 52.87. Reference level $52.92. Stop: $51.31 - Hard stop at the low of the breakout day (2026-07-02, 51.31). That is 3% of price, 0.54x ADR. Targets: 3R at $57.76, 5R at $60.99; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 310 shares ($16.4K, 16.4% of equity) risks $499.99 = 0.5% of the account.",
+    "regime": {
+      "state": "uptrend",
+      "label": "Uptrend",
+      "note": "Index above a rising 200-day and above the 50-day: full size on A+ setups, this is when breakouts pay.",
+      "sizeHint": 1,
+      "drawdownPct": 2.6199810290719387,
+      "price": 7927.92,
+      "sma50": 7829.173599999998,
+      "sma200": 6895.008950000001
+    },
+    "trade": {
+      "entry": 52.92286999999999,
+      "stop": 51.31,
+      "risk": 1.6128699999999867,
+      "mfeR": 27.291182798365877,
+      "side": "long",
+      "trailKey": "ema10",
+      "tranches": [
+        {
+          "date": "2026-07-09",
+          "frac": 0.5,
+          "price": 59.82,
+          "r": 4.2763086919590965,
+          "reason": "sold 50% into strength after 4 sessions"
+        },
+        {
+          "date": "2026-08-19",
+          "frac": 0.5,
+          "price": 84.97,
+          "r": 19.869629914376407,
+          "reason": "first close below the 10-day MA"
+        }
+      ],
+      "totalR": 12.072969303167753,
+      "exitDate": "2026-08-19",
+      "outcome": "win",
+      "riskPct": 3.0475860436140123,
+      "riskAdrMultiple": 0.5361723651893735
+    }
+  },
+  {
+    "symbol": "NRGX",
+    "name": "Oilfield-services re-rating (archetype)",
+    "sector": "Energy Services",
+    "setupLabel": "Episodic pivot (contract + guidance gap)",
+    "outcomeLabel": "WIN",
+    "context": "July 2026 was a rotation month: the S&P was roughly flat while leadership moved out of mega-cap tech into energy, financials and materials. Energy-services names were the real-tape example of this — one of them was up over 400% on a one-year view by August. EPs cluster in earnings season, and this one lands in the last week of July.",
+    "lesson": "Dormancy is the feature. Five months of a 16%-wide range means no trapped supply overhead and no one positioned, so a 19% gap on 6x volume forces a repricing that institutions spend weeks chasing. The opening-range stop made the risk 2.3% on a stock that then ran 45%.",
+    "triggerDate": "2026-07-22",
+    "triggerIdx": 285,
+    "wanted": "ep",
+    "metrics": {
+      "price": 16.41,
+      "adr": 4.483185677002455,
+      "dollarVol20": 35712927.0395,
+      "avgVol20": 2638561.6,
+      "ret1m": 40.73756432246998,
+      "ret3m": 56.583969465648856,
+      "ret6m": 72.37394957983194,
+      "pctOff52High": 1.2635379061371892,
+      "rsi14": 91.46443667396063,
+      "ema10": 13.40836091925398,
+      "ema20": 12.785301026212426,
+      "sma50": 11.540799999999999,
+      "sma200": 10.1625
+    },
+    "setup": {
+      "type": "ep",
+      "status": "triggered",
+      "eligible": true,
+      "score": 65.40701020679771,
+      "base": null,
+      "gap": 19.014626635873753,
+      "rvol": 7.029398542294453,
+      "baseRangePct": 35.30010172939981,
+      "closeInRangePct": 84.09090909090902,
+      "priorRunPct": 25.265188042430097,
+      "checks": [
+        {
+          "label": "Price >= $5",
+          "pass": true,
+          "detail": "$16.41"
+        },
+        {
+          "label": "ADR% >= 3.5%",
+          "pass": true,
+          "detail": "4.5%"
+        },
+        {
+          "label": "Turnover >= $5M/day",
+          "pass": true,
+          "detail": "$35.7M"
+        },
+        {
+          "label": "Gap >= 10%",
+          "pass": true,
+          "detail": "19% gap on 2026-07-22"
+        },
+        {
+          "label": "Volume >= 3x average",
+          "pass": true,
+          "detail": "7x the 20-day average"
+        },
+        {
+          "label": "Dormant 3-6 months first",
+          "pass": true,
+          "detail": "35.3% high-low range over the prior 90 sessions"
+        },
+        {
+          "label": "Not already extended",
+          "pass": true,
+          "detail": "25.3% in the 3 months into the gap"
+        },
+        {
+          "label": "Held the gap into the close",
+          "pass": true,
+          "detail": "closed in the top 16% of the day's range"
+        },
+        {
+          "label": "Fresh (<= 3 sessions old)",
+          "pass": true,
+          "detail": "today"
+        }
+      ],
+      "failing": []
+    },
+    "allSetups": {
+      "breakout": {
+        "eligible": false,
+        "status": "extended",
+        "score": 58.177886922679086,
+        "reason": null,
+        "failing": [
+          "Prior leg >= 30%",
+          "Volume drying up",
+          "Entry not extended"
+        ]
+      },
+      "ep": {
+        "eligible": true,
+        "status": "triggered",
+        "score": 65.40701020679771,
+        "reason": null,
+        "failing": []
+      },
+      "parabolic": {
+        "eligible": false,
+        "status": "watch",
+        "score": 41.37400644975134,
+        "reason": null,
+        "failing": [
+          "Up 3+ days in a row",
+          "Parabolic move >= 50%",
+          "First sign of weakness"
+        ]
+      }
+    },
+    "justification": "NRGX trades at $16.41 with a 4.5% ADR (workable) and $35.7M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. This is an episodic pivot, not a chart pattern: NRGX gapped 19% on 2026-07-22 on 7x its average volume, after spending the prior 90 sessions in a 35.3% range. Dormancy is the feature, not a bug - the best EPs come out of stocks nobody was watching, because the gap forces a repricing that institutions then have to chase for weeks. It closed in the top 16% of the gap day's range, so buyers held the gap into the bell rather than selling it. It is up 40.7% over one month, 56.6% over three and 72.4% over six, and it sits 1.3% off its 52-week high. Levels come from the opening range of 2026-07-22 (ORH 15.66 / ORL 15.28); the full day spans 1.8 ADRs, which is why the opening range, not the day, defines the risk.",
+    "planText": "Entry: Buy-stop on a break of the opening-range high (1-min, then add on the 5-min ORH) once price clears 15.66. Reference level $15.68. Stop: $15.28 - Hard stop at the low of the entry day (structural low 15.28). That is 2.5% of price, 0.56x ADR. Targets: 3R at $16.86, 5R at $17.65; then trail the balance on the 20-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 20-day moving average and exit on the first close below it. Size: 1,263 shares ($19.8K, 19.8% of equity) risks $499.72 = 0.5% of the account.",
+    "regime": {
+      "state": "uptrend",
+      "label": "Uptrend",
+      "note": "Index above a rising 200-day and above the 50-day: full size on A+ setups, this is when breakouts pay.",
+      "sizeHint": 1,
+      "drawdownPct": 0.7715517988837328,
+      "price": 8073.34,
+      "sma50": 7957.154199999997,
+      "sma200": 6999.017300000003
+    },
+    "trade": {
+      "entry": 15.66,
+      "stop": 15.28,
+      "risk": 0.3800000000000008,
+      "mfeR": 15.026315789473655,
+      "side": "long",
+      "trailKey": "ema20",
+      "tranches": [
+        {
+          "date": "2026-07-28",
+          "frac": 0.5,
+          "price": 17.54,
+          "r": 4.9473684210526185,
+          "reason": "sold 50% into strength after 4 sessions"
+        },
+        {
+          "date": "2026-09-11",
+          "frac": 0.5,
+          "price": 20.74,
+          "r": 13.368421052631547,
+          "reason": "still open at the end of the window"
+        }
+      ],
+      "totalR": 9.157894736842083,
+      "exitDate": "2026-09-11",
+      "outcome": "win",
+      "riskPct": 2.426564495530018,
+      "riskAdrMultiple": 0.5412589775118273
+    }
+  },
+  {
+    "symbol": "ADVX",
+    "name": "Specialty semiconductor substrates (archetype)",
+    "sector": "Semiconductors",
+    "setupLabel": "Parabolic short",
+    "outcomeLabel": "WIN",
+    "context": "Small-cap AI-adjacent names went vertical through late July 2026 on the back of the memory/AI capex theme. On 10 August the real tape handed the short side its catalyst: the S&P posted back-to-back losses on a tech sell-off, and the most extended names broke first.",
+    "lesson": "The discipline is in the waiting. Five up days, +118% in ten sessions and 7 ADRs above the 20-day EMA is not a short — it is a watch-list entry. The trade only existed once the stock made a lower high and closed below the prior day’s low, which put the stop at the day’s high, 0.9 ADR away.",
+    "triggerDate": "2026-08-10",
+    "triggerIdx": 298,
+    "wanted": "parabolic",
+    "metrics": {
+      "price": 74.19,
+      "adr": 9.143295834761123,
+      "dollarVol20": 344627814.374,
+      "avgVol20": 6443636.45,
+      "ret1m": 127.64651733660628,
+      "ret3m": 179.54031650339113,
+      "ret6m": 215.9710391822828,
+      "pctOff52High": 13.004221388367734,
+      "rsi14": 82.69487085926745,
+      "ema10": 60.91398624701033,
+      "ema20": 51.28333344307729,
+      "sma50": 36.09959999999998,
+      "sma200": 26.587999999999987
+    },
+    "setup": {
+      "type": "parabolic",
+      "status": "triggered",
+      "eligible": true,
+      "score": 85.63970731072223,
+      "base": null,
+      "upDays": 12,
+      "bestMove": 150.16876342436328,
+      "extensionAdr": 4.380946697421585,
+      "peakDate": "2026-08-07",
+      "weakness": [
+        "closed red",
+        "closed in the bottom third of its range"
+      ],
+      "checks": [
+        {
+          "label": "Price >= $5",
+          "pass": true,
+          "detail": "$74.19"
+        },
+        {
+          "label": "ADR% >= 3.5%",
+          "pass": true,
+          "detail": "9.1% (leader-grade)"
+        },
+        {
+          "label": "Turnover >= $5M/day",
+          "pass": true,
+          "detail": "$344.6M"
+        },
+        {
+          "label": "Up 3+ days in a row",
+          "pass": true,
+          "detail": "12 consecutive up closes"
+        },
+        {
+          "label": "Parabolic move >= 50%",
+          "pass": true,
+          "detail": "150.2% at its fastest over 5/10/20 sessions"
+        },
+        {
+          "label": ">= 3 ADRs above the 20EMA",
+          "pass": true,
+          "detail": "4.4 ADRs extended"
+        },
+        {
+          "label": "RSI(14) >= 75",
+          "pass": true,
+          "detail": 99
+        },
+        {
+          "label": "First sign of weakness",
+          "pass": true,
+          "detail": "closed red, closed in the bottom third of its range"
+        }
+      ],
+      "failing": []
+    },
+    "allSetups": {
+      "breakout": {
+        "eligible": false,
+        "status": null,
+        "score": 0,
+        "reason": "no orderly consolidation found in the last 60 sessions",
+        "failing": []
+      },
+      "ep": {
+        "eligible": false,
+        "status": null,
+        "score": 0,
+        "reason": "no >=10% gap in the last 3 sessions",
+        "failing": []
+      },
+      "parabolic": {
+        "eligible": true,
+        "status": "triggered",
+        "score": 85.63970731072223,
+        "reason": null,
+        "failing": []
+      }
+    },
+    "justification": "ADVX trades at $74.19 with a 9.1% ADR (very high) and $344.6M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. ADVX has gone parabolic: 150.2% at its fastest over the last 5-20 sessions, 12 consecutive up closes, RSI(14) at 99, and price stretched 4.4 ADRs above its 20-day EMA. Moves like this end in a vacuum, not a rounded top. The first crack has appeared - it closed red and closed in the bottom third of its range - which is the only condition under which this setup is tradeable. Never short day one or two of a parabolic move. First cover zone is the 10-day EMA at 60.91 and the 20-day EMA at 51.28 (30.9% below here).",
+    "planText": "Entry: Short the first break of the opening-range low (1- or 5-min), the first red 5-min candle after a gap up, or a failed bounce back into VWAP - never on day one of the move. Reference level $72.28. Stop: $78.89 - Hard stop at the high of the day, or a reclaim of VWAP if VWAP was the trigger, held to 1x ADR. That is 9.1% of price, 1x ADR. Note: the structural level (18%, 1.97x ADR) is wider than the 1x-ADR rule, so this stop is the ADR cap - if the trigger day closes with its low further away than that, skip the trade rather than widening the risk. Targets: the 10-day EMA at $60.91 and the 20-day EMA at $51.28 (3R at $52.45). Management: Cover into the 10- and 20-day moving averages, taking the first tranche once the stock is down 2-3 ADRs from entry. These are day-to-three-day trades, not positions to marry. Size: 75 shares ($5.4K, 5.4% of equity) risks $495.64 = 0.5% of the account.",
+    "regime": {
+      "state": "uptrend",
+      "label": "Uptrend",
+      "note": "Index above a rising 200-day and above the 50-day: full size on A+ setups, this is when breakouts pay.",
+      "sizeHint": 1,
+      "drawdownPct": 1.1743366855544735,
+      "price": 8181.64,
+      "sma50": 8001.141599999994,
+      "sma200": 7105.129249999997
+    },
+    "trade": {
+      "entry": 81.69,
+      "stop": 85.28,
+      "risk": 3.5900000000000034,
+      "mfeR": 6.8774373259052854,
+      "side": "short",
+      "tranches": [
+        {
+          "date": "2026-08-14",
+          "frac": 0.5,
+          "price": 64.38401091227611,
+          "r": 4.82060977373924,
+          "reason": "covered into the 10-day MA"
+        },
+        {
+          "date": "2026-08-18",
+          "frac": 0.5,
+          "price": 57.238619332992045,
+          "r": 6.810969545127557,
+          "reason": "covered the balance into the 20-day MA"
+        }
+      ],
+      "totalR": 5.815789659433399,
+      "exitDate": "2026-08-18",
+      "outcome": "win",
+      "riskPct": 4.394662749418537,
+      "riskAdrMultiple": 0.4806431760318682
+    }
+  },
+  {
+    "symbol": "HLTQ",
+    "name": "Health-care rotation winner (archetype)",
+    "sector": "Health Care",
+    "setupLabel": "Breakout (continuation flag)",
+    "outcomeLabel": "LOSS",
+    "context": "Health care was one of the June 2026 leadership groups as money left tech. This name did everything right on the chart and then broke out on 23 July — one session before the 24 July tape, when capex fears knocked the Nasdaq and the Russell 2000 lower and every fresh breakout in the market got sold.",
+    "lesson": "A textbook −1R. Nothing about the setup was wrong; the tape was. This is what 70% of trades look like and why the stop is non-negotiable: the gap-down through the breakout-day low is exactly the event the 1-ADR rule is sized for. No averaging down, no \"giving it room\", no re-entry until a new base forms.",
+    "triggerDate": "2026-07-23",
+    "triggerIdx": 286,
+    "wanted": "breakout",
+    "metrics": {
+      "price": 95.79,
+      "adr": 5.006013603556125,
+      "dollarVol20": 79337484.64549999,
+      "avgVol20": 880017,
+      "ret1m": 9.838321293429676,
+      "ret3m": 72.31516459794926,
+      "ret6m": 103.50541746335247,
+      "pctOff52High": 1.4708907632174373,
+      "rsi14": 77.77803755608377,
+      "ema10": 90.81033299791463,
+      "ema20": 88.44385048330237,
+      "sma50": 79.14300000000001,
+      "sma200": 57.35109999999997
+    },
+    "setup": {
+      "type": "breakout",
+      "status": "triggered",
+      "eligible": true,
+      "score": 78.09523387623558,
+      "pivot": 93.17,
+      "base": {
+        "startDate": "2026-06-29",
+        "endDate": "2026-07-22",
+        "len": 17,
+        "high": 93.17,
+        "low": 83.51,
+        "depthPct": 10.36814425244177,
+        "depthCapPct": 16.61513938984752,
+        "higherLows": true,
+        "lowsSlopePct": 1.9039635971739743,
+        "contraction": 0.7382434181943699,
+        "volRatio": 0.39586453265314797,
+        "aboveSma50Frac": 1,
+        "nearEmaFrac": 0.7058823529411765,
+        "quality": 72.0338058412512,
+        "leg": {
+          "pct": 75.52171460800903,
+          "startIdx": 210,
+          "startPrice": 53.19,
+          "peak": 93.36,
+          "bars": 59,
+          "startDate": "2026-04-02"
+        }
+      },
+      "rvol": 2.976154743813107,
+      "checks": [
+        {
+          "label": "Price >= $5",
+          "pass": true,
+          "detail": "$95.79"
+        },
+        {
+          "label": "ADR% >= 3.5%",
+          "pass": true,
+          "detail": "5% (leader-grade)"
+        },
+        {
+          "label": "Turnover >= $5M/day",
+          "pass": true,
+          "detail": "$79.3M"
+        },
+        {
+          "label": "Prior leg >= 30%",
+          "pass": true,
+          "detail": "75.5% in 59 sessions from 2026-04-02"
+        },
+        {
+          "label": "Consolidation 5-60 sessions",
+          "pass": true,
+          "detail": "17 sessions, 2026-06-29 to 2026-07-22"
+        },
+        {
+          "label": "Depth tight for its ADR",
+          "pass": true,
+          "detail": "10.4% deep vs 16.6% allowed"
+        },
+        {
+          "label": "Higher lows",
+          "pass": true,
+          "detail": "+1.9% back-half vs front-half low"
+        },
+        {
+          "label": "Range contracting",
+          "pass": true,
+          "detail": "0.74x last-third vs first-third range"
+        },
+        {
+          "label": "Volume drying up",
+          "pass": true,
+          "detail": "0.4x the volume of the advance"
+        },
+        {
+          "label": "Surfing rising MAs",
+          "pass": true,
+          "detail": "100% of base above the 50MA, 71% hugging the 20EMA"
+        },
+        {
+          "label": "Not a deep retrace of the leg",
+          "pass": true,
+          "detail": "24% of the leg given back"
+        },
+        {
+          "label": "Breakout on volume expansion",
+          "pass": true,
+          "detail": "3x average volume on the 2026-07-23 breakout, 1.6x range expansion"
+        },
+        {
+          "label": "Entry not extended",
+          "pass": true,
+          "detail": "2.8% above the pivot (0.6 ADRs)"
+        }
+      ],
+      "failing": []
+    },
+    "allSetups": {
+      "breakout": {
+        "eligible": true,
+        "status": "triggered",
+        "score": 78.09523387623558,
+        "reason": null,
+        "failing": []
+      },
+      "ep": {
+        "eligible": false,
+        "status": null,
+        "score": 0,
+        "reason": "no >=10% gap in the last 3 sessions",
+        "failing": []
+      },
+      "parabolic": {
+        "eligible": false,
+        "status": "watch",
+        "score": 16.004935465677143,
+        "reason": null,
+        "failing": [
+          "Up 3+ days in a row",
+          "Parabolic move >= 50%",
+          ">= 3 ADRs above the 20EMA",
+          "First sign of weakness"
+        ]
+      }
+    },
+    "justification": "HLTQ trades at $95.79 with a 5% ADR (leader-grade) and $79.3M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. It is up 9.8% over one month, 72.3% over three and 103.5% over six, and it sits 1.5% off its 52-week high. The pattern is the textbook continuation setup: a 75.5% advance over 59 sessions beginning 2026-04-02, followed by 17 sessions of orderly consolidation since 2026-06-29. That base is only 10.4% deep against the 16.6% its ADR would allow, lows are rising (+1.9% back-half vs front-half), the daily range has contracted to 0.74x what it was at the start of the base, and volume has dried up to 0.4x the volume of the advance. Price spent 100% of the base above a rising 50-day MA while hugging the 20-day EMA - the \"surfing\" behaviour that marks institutional accumulation rather than distribution. It cleared the 93.17 pivot on 2026-07-23 on 3x average volume with a 1.6x range expansion, which is the trigger.",
+    "planText": "Entry: Buy-stop on a break of the 1-min / 5-min / 60-min opening-range high once price clears 93.17. Reference level $93.26. Stop: $91.46 - Hard stop at the low of the breakout day (2026-07-23, 91.46). That is 1.9% of price, 0.39x ADR. Targets: 3R at $98.67, 5R at $102.28; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 214 shares ($20K, 20% of equity) risks $385.88 = 0.39% of the account; size capped by the 20% max-position rule, so realised risk is below 0.5%.",
+    "regime": {
+      "state": "uptrend",
+      "label": "Uptrend",
+      "note": "Index above a rising 200-day and above the 50-day: full size on A+ setups, this is when breakouts pay.",
+      "sizeHint": 1,
+      "drawdownPct": 0.6366771563155634,
+      "price": 8084.16,
+      "sma50": 7964.5017999999955,
+      "sma200": 7007.415500000003
+    },
+    "trade": {
+      "entry": 93.26316999999999,
+      "stop": 91.46,
+      "risk": 1.8031699999999944,
+      "mfeR": 0,
+      "side": "long",
+      "trailKey": "ema10",
+      "tranches": [
+        {
+          "date": "2026-07-24",
+          "frac": 1,
+          "price": 90.52,
+          "r": -1.5213041476954479,
+          "reason": "initial stop hit — gapped through, filled at the open"
+        }
+      ],
+      "totalR": -1.5213041476954479,
+      "exitDate": "2026-07-24",
+      "outcome": "loss",
+      "riskPct": 1.9334213066100954,
+      "riskAdrMultiple": 0.3862197468334184
+    }
+  },
+  {
+    "symbol": "SPCX",
+    "name": "Small-cap momentum name (archetype)",
+    "sector": "Industrials",
+    "setupLabel": "Episodic pivot",
+    "outcomeLabel": "LOSS (and a screen reject)",
+    "context": "Mid-August 2026 looked benign — the VIX printed its 2026 low of 14.2 on 17 August with the indices at record highs — but single-stock volatility was at a record spread to index volatility. Quiet index, violent individual names: the exact tape in which a weak gap gets sold.",
+    "lesson": "Two rules were broken before the trade was ever taken. Volume was 1.9x average, not the 3x+ the setup demands, and the stock was not dormant — it had already run 60% and round-tripped inside a 40%-wide range, so there was trapped supply everywhere above. The screener rejects it outright; traded anyway, it broke the opening-range low for a clean −1R.",
+    "triggerDate": "2026-08-11",
+    "triggerIdx": 299,
+    "wanted": "ep",
+    "metrics": {
+      "price": 7.93,
+      "adr": 7.0222381633743725,
+      "dollarVol20": 14108221.1585,
+      "avgVol20": 1907807.95,
+      "ret1m": 6.729475100942128,
+      "ret3m": 4.342105263157903,
+      "ret6m": 57.968127490039855,
+      "pctOff52High": 13.522355507088335,
+      "rsi14": 60.75886294664604,
+      "ema10": 7.431333393255313,
+      "ema20": 7.462181435256881,
+      "sma50": 7.861800000000003,
+      "sma200": 6.314349999999999
+    },
+    "setup": {
+      "type": "ep",
+      "status": "triggered",
+      "eligible": false,
+      "score": 29.350941486211184,
+      "base": null,
+      "gap": 13.99176954732511,
+      "rvol": 1.6383427828615655,
+      "baseRangePct": 55.16074450084603,
+      "closeInRangePct": 18.390804597701145,
+      "priorRunPct": -2.016129032258074,
+      "checks": [
+        {
+          "label": "Price >= $5",
+          "pass": true,
+          "detail": "$7.93"
+        },
+        {
+          "label": "ADR% >= 3.5%",
+          "pass": true,
+          "detail": "7% (leader-grade)"
+        },
+        {
+          "label": "Turnover >= $5M/day",
+          "pass": true,
+          "detail": "$14.1M"
+        },
+        {
+          "label": "Gap >= 10%",
+          "pass": true,
+          "detail": "14% gap on 2026-08-11"
+        },
+        {
+          "label": "Volume >= 3x average",
+          "pass": false,
+          "detail": "1.6x the 20-day average"
+        },
+        {
+          "label": "Dormant 3-6 months first",
+          "pass": false,
+          "detail": "55.2% high-low range over the prior 90 sessions"
+        },
+        {
+          "label": "Not already extended",
+          "pass": true,
+          "detail": "-2% in the 3 months into the gap"
+        },
+        {
+          "label": "Held the gap into the close",
+          "pass": false,
+          "detail": "closed in the top 82% of the day's range"
+        },
+        {
+          "label": "Fresh (<= 3 sessions old)",
+          "pass": true,
+          "detail": "today"
+        }
+      ],
+      "failing": [
+        {
+          "label": "Volume >= 3x average",
+          "pass": false,
+          "detail": "1.6x the 20-day average"
+        },
+        {
+          "label": "Dormant 3-6 months first",
+          "pass": false,
+          "detail": "55.2% high-low range over the prior 90 sessions"
+        },
+        {
+          "label": "Held the gap into the close",
+          "pass": false,
+          "detail": "closed in the top 82% of the day's range"
+        }
+      ]
+    },
+    "allSetups": {
+      "breakout": {
+        "eligible": true,
+        "status": "triggered",
+        "score": 49.57049747525219,
+        "reason": null,
+        "failing": [
+          "Range contracting",
+          "Surfing rising MAs",
+          "Not a deep retrace of the leg"
+        ]
+      },
+      "ep": {
+        "eligible": false,
+        "status": "triggered",
+        "score": 29.350941486211184,
+        "reason": null,
+        "failing": [
+          "Volume >= 3x average",
+          "Dormant 3-6 months first",
+          "Held the gap into the close"
+        ]
+      },
+      "parabolic": {
+        "eligible": false,
+        "status": "triggered",
+        "score": 25.564728923231396,
+        "reason": null,
+        "failing": [
+          "Up 3+ days in a row",
+          "Parabolic move >= 50%",
+          ">= 3 ADRs above the 20EMA",
+          "RSI(14) >= 75"
+        ]
+      }
+    },
+    "justification": "SPCX trades at $7.93 with a 7% ADR (leader-grade) and $14.1M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. This is an episodic pivot, not a chart pattern: SPCX gapped 14% on 2026-08-11 on 1.6x its average volume, after spending the prior 90 sessions in a 55.2% range. Dormancy is the feature, not a bug - the best EPs come out of stocks nobody was watching, because the gap forces a repricing that institutions then have to chase for weeks. It closed in the top 82% of the gap day's range, so buyers held the gap into the bell rather than selling it. It is up 6.7% over one month, 4.3% over three and 58% over six, and it sits 13.5% off its 52-week high. Levels come from the opening range of 2026-08-11 (ORH 8.44 / ORL 8.21); the full day spans 1.6 ADRs, which is why the opening range, not the day, defines the risk.",
+    "planText": "Entry: Buy-stop on a break of the opening-range high (1-min, then add on the 5-min ORH) once price clears 8.44. Reference level $8.45. Stop: $8.21 - Hard stop at the low of the entry day (structural low 8.21). That is 2.8% of price, 0.4x ADR. Targets: 3R at $9.16, 5R at $9.64; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 2,096 shares ($17.7K, 17.7% of equity) risks $499.77 = 0.5% of the account.",
+    "regime": {
+      "state": "uptrend",
+      "label": "Uptrend",
+      "note": "Index above a rising 200-day and above the 50-day: full size on A+ setups, this is when breakouts pay.",
+      "sizeHint": 1,
+      "drawdownPct": 2.3078757976465125,
+      "price": 8090.99,
+      "sma50": 8002.709199999994,
+      "sma200": 7112.756549999996
+    },
+    "trade": {
+      "entry": 8.44,
+      "stop": 8.21,
+      "risk": 0.22999999999999865,
+      "side": "long",
+      "mfeR": 0.8695652173913141,
+      "tranches": [
+        {
+          "date": "2026-08-11",
+          "frac": 1,
+          "price": 8.21,
+          "r": -1,
+          "reason": "lost the opening range the same session — stopped out intraday"
+        }
+      ],
+      "totalR": -1,
+      "exitDate": "2026-08-11",
+      "outcome": "loss",
+      "trailKey": "ema10",
+      "riskPct": 2.7251184834123063,
+      "riskAdrMultiple": 0.3880697891486515
+    }
+  }
+]
