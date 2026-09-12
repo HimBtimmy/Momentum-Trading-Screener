@@ -66,13 +66,14 @@ function evaluateCase(def, series) {
   const trigger = bars[tIdx];
   let trade = null, entry, stop;
 
+  // Always trade the levels the screener actually published for this setup, so
+  // the plan in the write-up and the fills below it can never disagree.
+  entry = setup.plan.entry;
+  stop = setup.plan.stop;
+
   if (wanted === 'parabolic') {
-    entry = trigger.vwapFail != null ? trigger.vwapFail : trigger.open;
-    stop = trigger.high;
     trade = simulateShort(bars, { entryIdx: tIdx, entry, stop, ema10, ema20 });
   } else if (wanted === 'ep') {
-    entry = trigger.orh;
-    stop = trigger.orl;
     trade = simulateLong(bars, { entryIdx: tIdx, entry, stop, ema10, ema20, adr: f.adr });
     // an EP that loses its opening range on the gap day itself stops out same day
     if (trigger.low <= stop) {
@@ -82,8 +83,6 @@ function evaluateCase(def, series) {
                 totalR: -1, exitDate: trigger.date, outcome: 'loss', trailKey: 'ema10' };
     }
   } else {
-    entry = setup.plan.entry;
-    stop = trigger.low;
     if (trigger.high < entry) throw new Error(def.symbol + ': trigger bar never reached the entry');
     trade = simulateLong(bars, { entryIdx: tIdx, entry, stop, ema10, ema20, adr: f.adr });
   }

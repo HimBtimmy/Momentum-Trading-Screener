@@ -269,12 +269,12 @@ export const SECTIONS = [
            'is the screener\'s stop, and the R-multiples come from replaying the management rules bar by bar.' },
       { figures: true },
       { p: 'The scorecard below is the point of the whole document. Two of five trades lost. The five together ' +
-           'returned **+24.5R**, and one trade produced half of it. At 0.5% risk per trade that is a 12.3% ' +
-           'account gain from a sample in which the majority of positions were closed at a loss.' },
+           'returned **{{TOTAL_R}}**, and one trade produced {{TOP_SHARE}} of it. At 0.5% risk per trade that is ' +
+           'a {{EQUITY_GAIN}} account gain from a sample in which the majority of positions were closed at a loss.' },
       { scorecard: true },
       { callout: { kind: 'note', title: 'What the failures are for',
         text: 'HLTQ was a textbook setup that broke out one session before a market-wide risk-off day; nothing in ' +
-              'the process was wrong and it still lost 1.5R on a gap through the stop. SPCX was never eligible — ' +
+              'the process was wrong and it still lost {{HLTQ_R}} on a gap through the stop. SPCX was never eligible — ' +
               'the screener rejected it on three separate criteria before the trade existed. Those are the two ' +
               'ways money is lost in this system: the unavoidable cost of a fixed-risk loss, and the entirely ' +
               'avoidable cost of overriding a filter.' } }

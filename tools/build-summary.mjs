@@ -21,14 +21,30 @@ const f1 = (x) => (Math.round(x * 10) / 10).toFixed(1);
 const pc = (x, d = 1) => (x >= 0 ? '' : '') + x.toFixed(d) + '%';
 const rr = (x) => (x >= 0 ? '+' : '') + x.toFixed(2) + 'R';
 
+/* Figures quoted in the prose are substituted from the computed results, so the
+ * narrative can never drift away from the numbers in the tables.            */
+var totalR = results.reduce(function (a, r) { return a + r.trade.totalR; }, 0);
+var topR = Math.max.apply(null, results.map(function (r) { return r.trade.totalR; }));
+var hltq = results.filter(function (r) { return r.symbol === 'HLTQ'; })[0];
+const VARS = {
+  '{{TOTAL_R}}': rr(totalR),
+  '{{TOP_SHARE}}': Math.round(topR / totalR * 100) + '%',
+  '{{EQUITY_GAIN}}': '+' + (totalR * 0.5).toFixed(1) + '%',
+  '{{HLTQ_R}}': hltq ? Math.abs(hltq.trade.totalR).toFixed(2) + 'R' : '1R'
+};
+function subst(s) {
+  Object.keys(VARS).forEach(function (k) { s = s.split(k).join(VARS[k]); });
+  return s;
+}
+
 /* inline markup ----------------------------------------------------------- */
 function inlineHtml(s) {
-  return esc(s)
+  return esc(subst(s))
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
     .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
 }
-const inlineMd = (s) => s;
+const inlineMd = (s) => subst(s);
 
 /* ---------------------------------------------------------------- figures */
 function buildFigure(caseData, res) {

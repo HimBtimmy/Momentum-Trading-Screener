@@ -171,7 +171,7 @@ function synth({ seed, startPrice, baseVolume, segments }) {
       const totalLog = Math.log(1 + seg.gainPct / 100);
       for (let i = 0; i < days; i++) {
         const g = Math.exp(totalLog * weights[i] / wsum) - 1;
-        const close = prev * (1 + g + (rnd() - 0.5) * seg.adr / 400);
+        const close = prev * (1 + g + (rnd() - 0.5) * seg.adr / 110);
         const v = baseVolume * (seg.vol ?? 2) * (0.8 + 0.8 * rnd()) * (1 + i / days);
         push(makeBar(CAL[cursor], prev, close, seg.adr * (0.8 + 0.5 * i / days), rnd, v));
       }

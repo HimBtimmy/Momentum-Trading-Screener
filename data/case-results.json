@@ -6,7 +6,7 @@
     "setupLabel": "Breakout (continuation flag)",
     "outcomeLabel": "WIN",
     "context": "The dominant theme of 2026 was the memory shortage — DRAM/NAND names led every momentum list in the real tape. June 2026 was a down month for tech (Nasdaq −2.8%), which is exactly what turns a vertical leg into a tradeable flag: the leader stops going up but refuses to break, while the index does the correcting for it.",
-    "lesson": "The A+ version of the setup: a real leg, a month of orderly digestion on drying volume while the index corrected, then a range expansion out of a 4%-deep pivot area. Risk was 0.55 ADR, so one ADR of follow-through paid roughly 2R.",
+    "lesson": "The A+ version of the setup: a real leg, six weeks of orderly digestion on drying volume while the index corrected, then a range expansion out of a tight pivot area. Because the stock coiled right underneath its pivot, the entry-day low sat barely half an ADR below the trigger — which is the only reason a move of this size converts into double-digit R rather than low single digits.",
     "triggerDate": "2026-07-02",
     "triggerIdx": 272,
     "wanted": "breakout",
@@ -203,7 +203,7 @@
     "setupLabel": "Episodic pivot (contract + guidance gap)",
     "outcomeLabel": "WIN",
     "context": "July 2026 was a rotation month: the S&P was roughly flat while leadership moved out of mega-cap tech into energy, financials and materials. Energy-services names were the real-tape example of this — one of them was up over 400% on a one-year view by August. EPs cluster in earnings season, and this one lands in the last week of July.",
-    "lesson": "Dormancy is the feature. Five months of a 16%-wide range means no trapped supply overhead and no one positioned, so a 19% gap on 6x volume forces a repricing that institutions spend weeks chasing. The opening-range stop made the risk 2.3% on a stock that then ran 45%.",
+    "lesson": "Dormancy is the feature. Four and a half months of chopping inside a wide, directionless range means nobody is positioned and there is no trapped supply immediately overhead, so a 19% gap on 7x volume forces a repricing that institutions then spend weeks chasing. Note where the risk came from: the gap day itself spanned several ADRs, so a full-day stop would have been unusable — it was the opening-range low that made the risk half an ADR.",
     "triggerDate": "2026-07-22",
     "triggerIdx": 285,
     "wanted": "ep",
@@ -326,10 +326,10 @@
       "sma200": 6999.017300000003
     },
     "trade": {
-      "entry": 15.66,
+      "entry": 15.675659999999999,
       "stop": 15.28,
-      "risk": 0.3800000000000008,
-      "mfeR": 15.026315789473655,
+      "risk": 0.39565999999999946,
+      "mfeR": 14.39200323510087,
       "side": "long",
       "trailKey": "ema20",
       "tranches": [
@@ -337,22 +337,22 @@
           "date": "2026-07-28",
           "frac": 0.5,
           "price": 17.54,
-          "r": 4.9473684210526185,
+          "r": 4.711974927968465,
           "reason": "sold 50% into strength after 4 sessions"
         },
         {
           "date": "2026-09-11",
           "frac": 0.5,
           "price": 20.74,
-          "r": 13.368421052631547,
+          "r": 12.79972703836629,
           "reason": "still open at the end of the window"
         }
       ],
-      "totalR": 9.157894736842083,
+      "totalR": 8.755850983167377,
       "exitDate": "2026-09-11",
       "outcome": "win",
-      "riskPct": 2.426564495530018,
-      "riskAdrMultiple": 0.5412589775118273
+      "riskPct": 2.5240404550749345,
+      "riskAdrMultiple": 0.5630015433049289
     }
   },
   {
@@ -362,34 +362,34 @@
     "setupLabel": "Parabolic short",
     "outcomeLabel": "WIN",
     "context": "Small-cap AI-adjacent names went vertical through late July 2026 on the back of the memory/AI capex theme. On 10 August the real tape handed the short side its catalyst: the S&P posted back-to-back losses on a tech sell-off, and the most extended names broke first.",
-    "lesson": "The discipline is in the waiting. Five up days, +118% in ten sessions and 7 ADRs above the 20-day EMA is not a short — it is a watch-list entry. The trade only existed once the stock made a lower high and closed below the prior day’s low, which put the stop at the day’s high, 0.9 ADR away.",
+    "lesson": "The discipline is in the waiting. A vertical run, a string of up closes and an RSI in the nineties is not a short — it is a watch-list entry, and the screener says so explicitly until the first crack appears. The trade only existed once the stock failed back through VWAP, which is what put the stop at that session's high, inside half an ADR. Shorting the same stock two days earlier, with the stop several ADRs away, is the same idea with no edge.",
     "triggerDate": "2026-08-10",
     "triggerIdx": 298,
     "wanted": "parabolic",
     "metrics": {
-      "price": 74.19,
-      "adr": 9.143295834761123,
-      "dollarVol20": 344627814.374,
-      "avgVol20": 6443636.45,
-      "ret1m": 127.64651733660628,
-      "ret3m": 179.54031650339113,
-      "ret6m": 215.9710391822828,
-      "pctOff52High": 13.004221388367734,
-      "rsi14": 82.69487085926745,
-      "ema10": 60.91398624701033,
-      "ema20": 51.28333344307729,
-      "sma50": 36.09959999999998,
-      "sma200": 26.587999999999987
+      "price": 59.37,
+      "adr": 8.76089308690342,
+      "dollarVol20": 233206991.956,
+      "avgVol20": 5025024.3,
+      "ret1m": 79.9636253410124,
+      "ret3m": 123.70007535795024,
+      "ret6m": 152.8534923339012,
+      "pctOff52High": 12.998241500586163,
+      "rsi14": 79.21194147784881,
+      "ema10": 49.94623945700386,
+      "ema20": 43.75636570648345,
+      "sma50": 33.90199999999999,
+      "sma200": 26.038599999999974
     },
     "setup": {
       "type": "parabolic",
       "status": "triggered",
       "eligible": true,
-      "score": 85.63970731072223,
+      "score": 82.97659397627197,
       "base": null,
-      "upDays": 12,
-      "bestMove": 150.16876342436328,
-      "extensionAdr": 4.380946697421585,
+      "upDays": 10,
+      "bestMove": 97.75689602909969,
+      "extensionAdr": 4.046320217974992,
       "peakDate": "2026-08-07",
       "weakness": [
         "closed red",
@@ -399,37 +399,37 @@
         {
           "label": "Price >= $5",
           "pass": true,
-          "detail": "$74.19"
+          "detail": "$59.37"
         },
         {
           "label": "ADR% >= 3.5%",
           "pass": true,
-          "detail": "9.1% (leader-grade)"
+          "detail": "8.8% (leader-grade)"
         },
         {
           "label": "Turnover >= $5M/day",
           "pass": true,
-          "detail": "$344.6M"
+          "detail": "$233.2M"
         },
         {
           "label": "Up 3+ days in a row",
           "pass": true,
-          "detail": "12 consecutive up closes"
+          "detail": "10 consecutive up closes"
         },
         {
           "label": "Parabolic move >= 50%",
           "pass": true,
-          "detail": "150.2% at its fastest over 5/10/20 sessions"
+          "detail": "97.8% at its fastest over 5/10/20 sessions"
         },
         {
           "label": ">= 3 ADRs above the 20EMA",
           "pass": true,
-          "detail": "4.4 ADRs extended"
+          "detail": "4 ADRs extended"
         },
         {
           "label": "RSI(14) >= 75",
           "pass": true,
-          "detail": 99
+          "detail": 96
         },
         {
           "label": "First sign of weakness",
@@ -457,13 +457,13 @@
       "parabolic": {
         "eligible": true,
         "status": "triggered",
-        "score": 85.63970731072223,
+        "score": 82.97659397627197,
         "reason": null,
         "failing": []
       }
     },
-    "justification": "ADVX trades at $74.19 with a 9.1% ADR (very high) and $344.6M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. ADVX has gone parabolic: 150.2% at its fastest over the last 5-20 sessions, 12 consecutive up closes, RSI(14) at 99, and price stretched 4.4 ADRs above its 20-day EMA. Moves like this end in a vacuum, not a rounded top. The first crack has appeared - it closed red and closed in the bottom third of its range - which is the only condition under which this setup is tradeable. Never short day one or two of a parabolic move. First cover zone is the 10-day EMA at 60.91 and the 20-day EMA at 51.28 (30.9% below here).",
-    "planText": "Entry: Short the first break of the opening-range low (1- or 5-min), the first red 5-min candle after a gap up, or a failed bounce back into VWAP - never on day one of the move. Reference level $72.28. Stop: $78.89 - Hard stop at the high of the day, or a reclaim of VWAP if VWAP was the trigger, held to 1x ADR. That is 9.1% of price, 1x ADR. Note: the structural level (18%, 1.97x ADR) is wider than the 1x-ADR rule, so this stop is the ADR cap - if the trigger day closes with its low further away than that, skip the trade rather than widening the risk. Targets: the 10-day EMA at $60.91 and the 20-day EMA at $51.28 (3R at $52.45). Management: Cover into the 10- and 20-day moving averages, taking the first tranche once the stock is down 2-3 ADRs from entry. These are day-to-three-day trades, not positions to marry. Size: 75 shares ($5.4K, 5.4% of equity) risks $495.64 = 0.5% of the account.",
+    "justification": "ADVX trades at $59.37 with a 8.8% ADR (very high) and $233.2M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. ADVX has gone parabolic: 97.8% at its fastest over the last 5-20 sessions, 10 consecutive up closes, RSI(14) at 96, and price stretched 4 ADRs above its 20-day EMA. Moves like this end in a vacuum, not a rounded top. The first crack has appeared - it closed red and closed in the bottom third of its range - which is the only condition under which this setup is tradeable. Never short day one or two of a parabolic move. First cover zone is the 10-day EMA at 49.95 and the 20-day EMA at 43.76 (26.3% below here).",
+    "planText": "Entry: Failed reclaim of VWAP on 2026-08-10 (reference 65.37), which is his preferred trigger; the alternatives are the 1- or 5-min opening-range low and the first red 5-min candle after a gap up. Never on day one of the move. Reference level $65.3. Stop: $68.24 - Hard stop at the high of 2026-08-10 (68.24). That is 4.5% of price, 0.51x ADR. Targets: the 10-day EMA at $49.95 and the 20-day EMA at $43.76 (3R at $56.5). Management: Cover into the 10- and 20-day moving averages, taking the first tranche once the stock is down 2-3 ADRs from entry. These are day-to-three-day trades, not positions to marry. Size: 170 shares ($11.1K, 11.1% of equity) risks $499.01 = 0.5% of the account.",
     "regime": {
       "state": "uptrend",
       "label": "Uptrend",
@@ -475,32 +475,32 @@
       "sma200": 7105.129249999997
     },
     "trade": {
-      "entry": 81.69,
-      "stop": 85.28,
-      "risk": 3.5900000000000034,
-      "mfeR": 6.8774373259052854,
+      "entry": 65.30463,
+      "stop": 68.24,
+      "risk": 2.935369999999992,
+      "mfeR": 6.709419936839328,
       "side": "short",
       "tranches": [
         {
-          "date": "2026-08-14",
+          "date": "2026-08-13",
           "frac": 0.5,
-          "price": 64.38401091227611,
-          "r": 4.82060977373924,
+          "price": 52.31467209929062,
+          "r": 4.425322157244034,
           "reason": "covered into the 10-day MA"
         },
         {
           "date": "2026-08-18",
           "frac": 0.5,
-          "price": 57.238619332992045,
-          "r": 6.810969545127557,
+          "price": 47.29228662725345,
+          "r": 6.1363110520127275,
           "reason": "covered the balance into the 20-day MA"
         }
       ],
-      "totalR": 5.815789659433399,
+      "totalR": 5.280816604628381,
       "exitDate": "2026-08-18",
       "outcome": "win",
-      "riskPct": 4.394662749418537,
-      "riskAdrMultiple": 0.4806431760318682
+      "riskPct": 4.494888034738106,
+      "riskAdrMultiple": 0.5130627654225656
     }
   },
   {
@@ -699,7 +699,7 @@
     "setupLabel": "Episodic pivot",
     "outcomeLabel": "LOSS (and a screen reject)",
     "context": "Mid-August 2026 looked benign — the VIX printed its 2026 low of 14.2 on 17 August with the indices at record highs — but single-stock volatility was at a record spread to index volatility. Quiet index, violent individual names: the exact tape in which a weak gap gets sold.",
-    "lesson": "Two rules were broken before the trade was ever taken. Volume was 1.9x average, not the 3x+ the setup demands, and the stock was not dormant — it had already run 60% and round-tripped inside a 40%-wide range, so there was trapped supply everywhere above. The screener rejects it outright; traded anyway, it broke the opening-range low for a clean −1R.",
+    "lesson": "Three criteria failed before the trade was ever taken. Volume was 1.6x average, not the 3x+ the setup demands; the stock was not dormant — it had round-tripped inside a 55%-wide range, leaving trapped supply at every level above; and it closed in the bottom fifth of the gap day's range, meaning the buyers who created the gap were gone by the bell. The screener rejects it outright. Traded anyway, it lost the opening range the same session for a clean −1R.",
     "triggerDate": "2026-08-11",
     "triggerIdx": 299,
     "wanted": "ep",
@@ -843,11 +843,11 @@
       "sma200": 7112.756549999996
     },
     "trade": {
-      "entry": 8.44,
+      "entry": 8.448439999999998,
       "stop": 8.21,
-      "risk": 0.22999999999999865,
+      "risk": 0.2384399999999971,
       "side": "long",
-      "mfeR": 0.8695652173913141,
+      "mfeR": 0.8033886931723073,
       "tranches": [
         {
           "date": "2026-08-11",
@@ -861,8 +861,8 @@
       "exitDate": "2026-08-11",
       "outcome": "loss",
       "trailKey": "ema10",
-      "riskPct": 2.7251184834123063,
-      "riskAdrMultiple": 0.3880697891486515
+      "riskPct": 2.8222961872250636,
+      "riskAdrMultiple": 0.40190835479565606
     }
   }
 ]

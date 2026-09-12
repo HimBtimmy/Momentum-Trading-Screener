@@ -599,8 +599,20 @@
       chk('First sign of weakness', weakness.length > 0, weakness.length ? weakness.join(', ') : 'still going straight up - do not front-run it')
     ]);
 
-    var structuralStop = Math.max(bar.high, bars[i - 1].high);
-    var plan = shortPlan(f, Math.min(bar.low, bars[i - 1].low), structuralStop, cfg);
+    // His preferred trigger is a failed bounce into VWAP, which is an intraday
+    // level. When the data carries one, use it and stop at that session's high;
+    // otherwise fall back to a sell-stop under the two-day low.
+    var hasVwap = num(bar.vwapFail);
+    var trigger = hasVwap ? bar.vwapFail : Math.min(bar.low, bars[i - 1].low);
+    var structuralStop = hasVwap ? bar.high : Math.max(bar.high, bars[i - 1].high);
+    var plan = shortPlan(f, trigger, structuralStop, cfg);
+    plan.usedVwap = hasVwap;
+    if (hasVwap) {
+      plan.entryRule = 'Failed reclaim of VWAP on ' + bar.date + ' (reference ' + round(bar.vwapFail, 2) +
+        '), which is his preferred trigger; the alternatives are the 1- or 5-min opening-range low and the ' +
+        'first red 5-min candle after a gap up. Never on day one of the move.';
+      plan.stopRule = 'Hard stop at the high of ' + bar.date + ' (' + round(bar.high, 2) + ').';
+    }
     plan.targetNote = 'First cover zone is the 10-day EMA at ' + round(e10, 2) + ' and the 20-day EMA at ' + round(e20, 2) +
                       ' (' + round((f.price - e20) / f.price * 100, 1) + '% below here).';
 

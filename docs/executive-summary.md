@@ -188,15 +188,15 @@ The dominant theme of 2026 was the memory shortage — DRAM/NAND names led every
 | 2026-07-09 | 50% | 59.82 | +4.28R | sold 50% into strength after 4 sessions |
 | 2026-08-19 | 50% | 84.97 | +19.87R | first close below the 10-day MA |
 
-**Lesson.** The A+ version of the setup: a real leg, a month of orderly digestion on drying volume while the index corrected, then a range expansion out of a 4%-deep pivot area. Risk was 0.55 ADR, so one ADR of follow-through paid roughly 2R.
+**Lesson.** The A+ version of the setup: a real leg, six weeks of orderly digestion on drying volume while the index corrected, then a range expansion out of a tight pivot area. Because the stock coiled right underneath its pivot, the entry-day low sat barely half an ADR below the trigger — which is the only reason a move of this size converts into double-digit R rather than low single digits.
 
 *Chart: see [docs/executive-summary.html](executive-summary.html#case-MEMQ).*
 
 ---
 
-### NRGX — Episodic pivot (contract + guidance gap) · WINNER +9.16R
+### NRGX — Episodic pivot (contract + guidance gap) · WINNER +8.76R
 
-*Oilfield-services re-rating (archetype). Trigger 2026-07-22. ADR 4.5%. Entry 15.66 · stop 15.28 · risk 2.43% (0.54× ADR) · max favourable excursion 15.0R.*
+*Oilfield-services re-rating (archetype). Trigger 2026-07-22. ADR 4.5%. Entry 15.68 · stop 15.28 · risk 2.52% (0.56× ADR) · max favourable excursion 14.4R.*
 
 July 2026 was a rotation month: the S&P was roughly flat while leadership moved out of mega-cap tech into energy, financials and materials. Energy-services names were the real-tape example of this — one of them was up over 400% on a one-year view by August. EPs cluster in earnings season, and this one lands in the last week of July.
 
@@ -208,33 +208,33 @@ July 2026 was a rotation month: the S&P was roughly flat while leadership moved 
 
 | Date | Size | Price | R | Why |
 |---|---|---|---|---|
-| 2026-07-28 | 50% | 17.54 | +4.95R | sold 50% into strength after 4 sessions |
-| 2026-09-11 | 50% | 20.74 | +13.37R | still open at the end of the window |
+| 2026-07-28 | 50% | 17.54 | +4.71R | sold 50% into strength after 4 sessions |
+| 2026-09-11 | 50% | 20.74 | +12.80R | still open at the end of the window |
 
-**Lesson.** Dormancy is the feature. Five months of a 16%-wide range means no trapped supply overhead and no one positioned, so a 19% gap on 6x volume forces a repricing that institutions spend weeks chasing. The opening-range stop made the risk 2.3% on a stock that then ran 45%.
+**Lesson.** Dormancy is the feature. Four and a half months of chopping inside a wide, directionless range means nobody is positioned and there is no trapped supply immediately overhead, so a 19% gap on 7x volume forces a repricing that institutions then spend weeks chasing. Note where the risk came from: the gap day itself spanned several ADRs, so a full-day stop would have been unusable — it was the opening-range low that made the risk half an ADR.
 
 *Chart: see [docs/executive-summary.html](executive-summary.html#case-NRGX).*
 
 ---
 
-### ADVX — Parabolic short · WINNER +5.82R
+### ADVX — Parabolic short · WINNER +5.28R
 
-*Specialty semiconductor substrates (archetype). Trigger 2026-08-10. ADR 9.1%. Entry 81.69 · stop 85.28 · risk 4.39% (0.48× ADR) · max favourable excursion 6.9R.*
+*Specialty semiconductor substrates (archetype). Trigger 2026-08-10. ADR 8.8%. Entry 65.30 · stop 68.24 · risk 4.49% (0.51× ADR) · max favourable excursion 6.7R.*
 
 Small-cap AI-adjacent names went vertical through late July 2026 on the back of the memory/AI capex theme. On 10 August the real tape handed the short side its catalyst: the S&P posted back-to-back losses on a tech sell-off, and the most extended names broke first.
 
-**Why it was flagged.** ADVX trades at $74.19 with a 9.1% ADR (very high) and $344.6M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. ADVX has gone parabolic: 150.2% at its fastest over the last 5-20 sessions, 12 consecutive up closes, RSI(14) at 99, and price stretched 4.4 ADRs above its 20-day EMA. Moves like this end in a vacuum, not a rounded top. The first crack has appeared - it closed red and closed in the bottom third of its range - which is the only condition under which this setup is tradeable. Never short day one or two of a parabolic move. First cover zone is the 10-day EMA at 60.91 and the 20-day EMA at 51.28 (30.9% below here).
+**Why it was flagged.** ADVX trades at $59.37 with a 8.8% ADR (very high) and $233.2M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. ADVX has gone parabolic: 97.8% at its fastest over the last 5-20 sessions, 10 consecutive up closes, RSI(14) at 96, and price stretched 4 ADRs above its 20-day EMA. Moves like this end in a vacuum, not a rounded top. The first crack has appeared - it closed red and closed in the bottom third of its range - which is the only condition under which this setup is tradeable. Never short day one or two of a parabolic move. First cover zone is the 10-day EMA at 49.95 and the 20-day EMA at 43.76 (26.3% below here).
 
-**The plan.** Entry: Short the first break of the opening-range low (1- or 5-min), the first red 5-min candle after a gap up, or a failed bounce back into VWAP - never on day one of the move. Reference level $72.28. Stop: $78.89 - Hard stop at the high of the day, or a reclaim of VWAP if VWAP was the trigger, held to 1x ADR. That is 9.1% of price, 1x ADR. Note: the structural level (18%, 1.97x ADR) is wider than the 1x-ADR rule, so this stop is the ADR cap - if the trigger day closes with its low further away than that, skip the trade rather than widening the risk. Targets: the 10-day EMA at $60.91 and the 20-day EMA at $51.28 (3R at $52.45). Management: Cover into the 10- and 20-day moving averages, taking the first tranche once the stock is down 2-3 ADRs from entry. These are day-to-three-day trades, not positions to marry. Size: 75 shares ($5.4K, 5.4% of equity) risks $495.64 = 0.5% of the account.
+**The plan.** Entry: Failed reclaim of VWAP on 2026-08-10 (reference 65.37), which is his preferred trigger; the alternatives are the 1- or 5-min opening-range low and the first red 5-min candle after a gap up. Never on day one of the move. Reference level $65.3. Stop: $68.24 - Hard stop at the high of 2026-08-10 (68.24). That is 4.5% of price, 0.51x ADR. Targets: the 10-day EMA at $49.95 and the 20-day EMA at $43.76 (3R at $56.5). Management: Cover into the 10- and 20-day moving averages, taking the first tranche once the stock is down 2-3 ADRs from entry. These are day-to-three-day trades, not positions to marry. Size: 170 shares ($11.1K, 11.1% of equity) risks $499.01 = 0.5% of the account.
 
 **Fills.**
 
 | Date | Size | Price | R | Why |
 |---|---|---|---|---|
-| 2026-08-14 | 50% | 64.38 | +4.82R | covered into the 10-day MA |
-| 2026-08-18 | 50% | 57.24 | +6.81R | covered the balance into the 20-day MA |
+| 2026-08-13 | 50% | 52.31 | +4.43R | covered into the 10-day MA |
+| 2026-08-18 | 50% | 47.29 | +6.14R | covered the balance into the 20-day MA |
 
-**Lesson.** The discipline is in the waiting. Five up days, +118% in ten sessions and 7 ADRs above the 20-day EMA is not a short — it is a watch-list entry. The trade only existed once the stock made a lower high and closed below the prior day’s low, which put the stop at the day’s high, 0.9 ADR away.
+**Lesson.** The discipline is in the waiting. A vertical run, a string of up closes and an RSI in the nineties is not a short — it is a watch-list entry, and the screener says so explicitly until the first crack appears. The trade only existed once the stock failed back through VWAP, which is what put the stop at that session's high, inside half an ADR. Shorting the same stock two days earlier, with the stop several ADRs away, is the same idea with no edge.
 
 *Chart: see [docs/executive-summary.html](executive-summary.html#case-ADVX).*
 
@@ -264,7 +264,7 @@ Health care was one of the June 2026 leadership groups as money left tech. This 
 
 ### SPCX — Episodic pivot · LOSER -1.00R
 
-*Small-cap momentum name (archetype). Trigger 2026-08-11. ADR 7.0%. Entry 8.44 · stop 8.21 · risk 2.73% (0.39× ADR) · max favourable excursion 0.9R.*
+*Small-cap momentum name (archetype). Trigger 2026-08-11. ADR 7.0%. Entry 8.45 · stop 8.21 · risk 2.82% (0.40× ADR) · max favourable excursion 0.8R.*
 
 Mid-August 2026 looked benign — the VIX printed its 2026 low of 14.2 on 17 August with the indices at record highs — but single-stock volatility was at a record spread to index volatility. Quiet index, violent individual names: the exact tape in which a weak gap gets sold.
 
@@ -278,24 +278,24 @@ Mid-August 2026 looked benign — the VIX printed its 2026 low of 14.2 on 17 Aug
 |---|---|---|---|---|
 | 2026-08-11 | 100% | 8.21 | -1.00R | lost the opening range the same session — stopped out intraday |
 
-**Lesson.** Two rules were broken before the trade was ever taken. Volume was 1.9x average, not the 3x+ the setup demands, and the stock was not dormant — it had already run 60% and round-tripped inside a 40%-wide range, so there was trapped supply everywhere above. The screener rejects it outright; traded anyway, it broke the opening-range low for a clean −1R.
+**Lesson.** Three criteria failed before the trade was ever taken. Volume was 1.6x average, not the 3x+ the setup demands; the stock was not dormant — it had round-tripped inside a 55%-wide range, leaving trapped supply at every level above; and it closed in the bottom fifth of the gap day's range, meaning the buyers who created the gap were gone by the bell. The screener rejects it outright. Traded anyway, it lost the opening range the same session for a clean −1R.
 
 *Chart: see [docs/executive-summary.html](executive-summary.html#case-SPCX).*
 
-The scorecard below is the point of the whole document. Two of five trades lost. The five together returned **+24.5R**, and one trade produced half of it. At 0.5% risk per trade that is a 12.3% account gain from a sample in which the majority of positions were closed at a loss.
+The scorecard below is the point of the whole document. Two of five trades lost. The five together returned **+23.59R**, and one trade produced 51% of it. At 0.5% risk per trade that is a +11.8% account gain from a sample in which the majority of positions were closed at a loss.
 
 | Symbol | Setup | Trigger | Risk (ADR) | Result | MFE | Equity @0.5% |
 |---|---|---|---|---|---|---|
 | MEMQ | Breakout | 2026-07-02 | 0.54× | +12.07R | 27.3R | 6.04% |
-| NRGX | Episodic pivot | 2026-07-22 | 0.54× | +9.16R | 15.0R | 4.58% |
-| ADVX | Parabolic short | 2026-08-10 | 0.48× | +5.82R | 6.9R | 2.91% |
+| NRGX | Episodic pivot | 2026-07-22 | 0.56× | +8.76R | 14.4R | 4.38% |
+| ADVX | Parabolic short | 2026-08-10 | 0.51× | +5.28R | 6.7R | 2.64% |
 | HLTQ | Breakout | 2026-07-23 | 0.39× | -1.52R | 0.0R | -0.76% |
-| SPCX | Episodic pivot | 2026-08-11 | 0.39× | -1.00R | 0.9R | -0.50% |
-| **Total** | | | | **+24.53R** | | **+12.3%** |
+| SPCX | Episodic pivot | 2026-08-11 | 0.40× | -1.00R | 0.8R | -0.50% |
+| **Total** | | | | **+23.59R** | | **+11.8%** |
 
 > **What the failures are for**
 >
-> HLTQ was a textbook setup that broke out one session before a market-wide risk-off day; nothing in the process was wrong and it still lost 1.5R on a gap through the stop. SPCX was never eligible — the screener rejected it on three separate criteria before the trade existed. Those are the two ways money is lost in this system: the unavoidable cost of a fixed-risk loss, and the entirely avoidable cost of overriding a filter.
+> HLTQ was a textbook setup that broke out one session before a market-wide risk-off day; nothing in the process was wrong and it still lost 1.52R on a gap through the stop. SPCX was never eligible — the screener rejected it on three separate criteria before the trade existed. Those are the two ways money is lost in this system: the unavoidable cost of a fixed-risk loss, and the entirely avoidable cost of overriding a filter.
 
 ## What the screener does with all this
 

@@ -23,9 +23,10 @@ export const CASES = [
       'momentum list in the real tape. June 2026 was a down month for tech (Nasdaq −2.8%), which is ' +
       'exactly what turns a vertical leg into a tradeable flag: the leader stops going up but refuses ' +
       'to break, while the index does the correcting for it.',
-    lesson: 'The A+ version of the setup: a real leg, a month of orderly digestion on drying volume ' +
-      'while the index corrected, then a range expansion out of a 4%-deep pivot area. Risk was 0.55 ADR, ' +
-      'so one ADR of follow-through paid roughly 2R.',
+    lesson: 'The A+ version of the setup: a real leg, six weeks of orderly digestion on drying volume while ' +
+      'the index corrected, then a range expansion out of a tight pivot area. Because the stock coiled right ' +
+      'underneath its pivot, the entry-day low sat barely half an ADR below the trigger — which is the only ' +
+      'reason a move of this size converts into double-digit R rather than low single digits.',
     segments: [
       S('drift', '2025-06-02', '2025-11-28', { gainPct: 16, adr: 4.0, vol: 0.8 }),
       S('drop',  '2025-12-01', '2026-01-09', { lossPct: 13, adr: 4.5, vol: 0.9 }),
@@ -49,9 +50,11 @@ export const CASES = [
       'mega-cap tech into energy, financials and materials. Energy-services names were the real-tape ' +
       'example of this — one of them was up over 400% on a one-year view by August. EPs cluster in ' +
       'earnings season, and this one lands in the last week of July.',
-    lesson: 'Dormancy is the feature. Five months of a 16%-wide range means no trapped supply overhead ' +
-      'and no one positioned, so a 19% gap on 6x volume forces a repricing that institutions spend weeks ' +
-      'chasing. The opening-range stop made the risk 2.3% on a stock that then ran 45%.',
+    lesson: 'Dormancy is the feature. Four and a half months of chopping inside a wide, directionless range ' +
+      'means nobody is positioned and there is no trapped supply immediately overhead, so a 19% gap on 7x ' +
+      'volume forces a repricing that institutions then spend weeks chasing. Note where the risk came from: ' +
+      'the gap day itself spanned several ADRs, so a full-day stop would have been unusable — it was the ' +
+      'opening-range low that made the risk half an ADR.',
     segments: [
       S('drift', '2025-06-02', '2025-08-29', { lossPct: 0, gainPct: -6, adr: 4.5, vol: 0.9 }),
       S('base',  '2025-09-02', '2025-12-31', { depthPct: 16, adrStart: 4.5, adrEnd: 4.0, vol: 0.7, liftPct: 0.3 }),
@@ -75,15 +78,19 @@ export const CASES = [
     context: 'Small-cap AI-adjacent names went vertical through late July 2026 on the back of the ' +
       'memory/AI capex theme. On 10 August the real tape handed the short side its catalyst: the S&P ' +
       'posted back-to-back losses on a tech sell-off, and the most extended names broke first.',
-    lesson: 'The discipline is in the waiting. Five up days, +118% in ten sessions and 7 ADRs above the ' +
-      '20-day EMA is not a short — it is a watch-list entry. The trade only existed once the stock made a ' +
-      'lower high and closed below the prior day’s low, which put the stop at the day’s high, 0.9 ADR away.',
+    lesson: 'The discipline is in the waiting. A vertical run, a string of up closes and an RSI in the ' +
+      'nineties is not a short — it is a watch-list entry, and the screener says so explicitly until the ' +
+      'first crack appears. The trade only existed once the stock failed back through VWAP, which is what ' +
+      'put the stop at that session\'s high, inside half an ADR. Shorting the same stock two days earlier, ' +
+      'with the stop several ADRs away, is the same idea with no edge.',
     segments: [
       S('drift', '2025-06-02', '2025-12-31', { gainPct: 22, adr: 5.0, vol: 0.9 }),
       S('drift', '2026-01-02', '2026-04-30', { gainPct: 35, adr: 5.5, vol: 1.0 }),
       S('base',  '2026-05-01', '2026-06-26', { depthPct: 14, adrStart: 5.5, adrEnd: 4.5, vol: 0.7, liftPct: 0.5 }),
-      S('drift', '2026-06-29', '2026-07-24', { gainPct: 28, adr: 6.0, vol: 1.4 }),
-      S('parabolic', '2026-07-27', '2026-08-07', { gainPct: 118, adr: 9.0, vol: 3.0 }),
+      S('drift', '2026-06-29', '2026-07-20', { gainPct: 24, adr: 6.0, vol: 1.4 }),
+      S('drop',  '2026-07-21', '2026-07-24', { lossPct: 7, adr: 6.5, vol: 1.2 }),
+      S('drift', '2026-07-27', '2026-07-30', { gainPct: 11, adr: 7.0, vol: 1.8 }),
+      S('parabolic', '2026-07-31', '2026-08-07', { gainPct: 82, adr: 9.5, vol: 3.0 }),
       B1('reversal', '2026-08-10', { gapPct: 1.5, highPct: 4.6, lowPct: -10.2, closePct: -9.0,
                                      shortEntryPct: 0.2, adr: 11, vol: 4.0 }),
       S('drop',  '2026-08-11', '2026-08-21', { lossPct: 27, adr: 10, vol: 2.6 }),
@@ -127,10 +134,11 @@ export const CASES = [
     context: 'Mid-August 2026 looked benign — the VIX printed its 2026 low of 14.2 on 17 August with the ' +
       'indices at record highs — but single-stock volatility was at a record spread to index volatility. ' +
       'Quiet index, violent individual names: the exact tape in which a weak gap gets sold.',
-    lesson: 'Two rules were broken before the trade was ever taken. Volume was 1.9x average, not the 3x+ ' +
-      'the setup demands, and the stock was not dormant — it had already run 60% and round-tripped inside a ' +
-      '40%-wide range, so there was trapped supply everywhere above. The screener rejects it outright; ' +
-      'traded anyway, it broke the opening-range low for a clean −1R.',
+    lesson: 'Three criteria failed before the trade was ever taken. Volume was 1.6x average, not the 3x+ the ' +
+      'setup demands; the stock was not dormant — it had round-tripped inside a 55%-wide range, leaving ' +
+      'trapped supply at every level above; and it closed in the bottom fifth of the gap day\'s range, ' +
+      'meaning the buyers who created the gap were gone by the bell. The screener rejects it outright. ' +
+      'Traded anyway, it lost the opening range the same session for a clean −1R.',
     segments: [
       S('drift', '2025-06-02', '2025-10-31', { gainPct: -18, adr: 6.0, vol: 0.9 }),
       S('base',  '2025-11-03', '2026-02-27', { depthPct: 20, adrStart: 6.0, adrEnd: 5.5, vol: 0.8, liftPct: 0.35 }),
@@ -235,8 +243,8 @@ export const UNIVERSE = [
     segments: [
       S('drift', '2025-06-02', '2026-02-27', { gainPct: 18, adr: 6.5, vol: 0.9 }),
       S('drift', '2026-03-02', '2026-07-31', { gainPct: 45, adr: 7.0, vol: 1.1 }),
-      S('base',  '2026-08-03', '2026-08-27', { depthPct: 13, adrStart: 7.0, adrEnd: 5.5, vol: 0.7, liftPct: 0.5 }),
-      S('parabolic', '2026-08-28', '2026-09-10', { gainPct: 104, adr: 10.0, vol: 3.2 }),
+      S('base',  '2026-08-03', '2026-08-28', { depthPct: 13, adrStart: 7.0, adrEnd: 5.5, vol: 0.7, liftPct: 0.5 }),
+      S('parabolic', '2026-08-31', '2026-09-10', { gainPct: 88, adr: 10.0, vol: 3.2 }),
       B1('reversal', '2026-09-11', { gapPct: 2.0, highPct: 4.8, lowPct: -9.2, closePct: -8.0,
                                      shortEntryPct: 0.4, adr: 12, vol: 4.2 })
     ] },
