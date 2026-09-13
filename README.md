@@ -9,7 +9,40 @@ A written strategy analysis and a working screener for Kristjan Kullamägi's
 | **[docs/executive-summary.html](docs/executive-summary.html)** | The full analysis — screening criteria, entry mechanics, stop-loss logic, profit-taking rules, position sizing, market-regime gating, and five annotated case studies from the June–August 2026 window (3 winners, 2 losers). Open it in a browser; the charts are inline SVG. |
 | **[docs/executive-summary.md](docs/executive-summary.md)** | The same document as plain text. |
 | **[docs/scoring.md](docs/scoring.md)** | How the setup score, the A+/A/B/C quality grade, the Minervini trend template and the RS rating are calculated, component by component, with the eligibility gates. |
-| **[app/index.html](app/index.html)** | The screener. Open it in a browser — no build step, no server required (a local server is only needed for the live-API tab). |
+| **[app/index.html](app/index.html)** | The screener. Open it in a browser for the bundled demo and CSV import — no build step, nothing to install. Live US-market data needs the local backend below. |
+
+## Quick start — screen the live US market
+
+Run this on your own machine. A published copy of the page is sandboxed and cannot reach
+a server on your computer, so use the copy the backend serves.
+
+```bash
+git clone https://github.com/HimBtimmy/Momentum-Trading-Screener
+cd Momentum-Trading-Screener
+git checkout claude/gallant-archimedes-jovbix
+pip install -r tools/requirements.txt
+python3 tools/server.py --open
+```
+
+Then, in the page that opens:
+
+1. Open the **Backend (yfinance)** tab and check the status line says *Backend up*.
+2. Set **Universe** `Auto`, **Symbol cap** `300`, **Sessions** `252`.
+3. Click **Fetch from yfinance** and wait for the progress bar.
+
+The results render on their own: constituents resolved, a year of daily bars downloaded,
+every setup scored, with no CSV anywhere in the loop.
+
+Worth knowing:
+
+* **Symbol cap `0`** downloads the whole ~3,500-name universe. That takes several minutes;
+  get the 300-name run working first.
+* **The same fetch twice is instant** — results are cached for the day. Tick *Ignore
+  today's cache* to force a fresh download.
+* **Empty batches mean Yahoo is rate-limiting you.** Restart with
+  `python3 tools/server.py --sleep 3`.
+* **No backend?** The app still works standalone: open `app/index.html` for the bundled
+  demo universe, or import a CSV built by `tools/fetch_vti_universe.py`.
 
 ## The strategy in one table
 
