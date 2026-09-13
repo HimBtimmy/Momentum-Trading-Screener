@@ -38,8 +38,9 @@
     view: 'cards',
     showRejects: false,
     detail: null,                       // symbol shown in the detail overlay
-    filters: { setup: '', status: '', eligibility: 'all',
+    filters: { setup: '', statuses: [], eligibility: 'all',
                minScore: 0, maxScore: 100, minRs: 1, maxRs: 99 },
+    sort: { key: '', dir: 'desc' },     // '' = the engine's own ranking
     settings: {
       accountEquity: 100000, riskPctPerTrade: 0.5, maxPositionPct: 20,
       minPrice: 5, minAdr: 3.5, minDollarVol: 5e6, marketCapTopPct: 100,
@@ -175,6 +176,11 @@
     triggered: 'Triggered', 'triggered-lowvol': 'Triggered · thin volume', ready: 'Ready · pivot within 1 ADR',
     building: 'Building', extended: 'Extended · entry gone', fresh: 'Fresh gap', watch: 'Watch only · no crack yet'
   };
+  /* Chip-sized labels; the full wording rides along as the title attribute. */
+  var STATUS_SHORT = {
+    triggered: 'Triggered', 'triggered-lowvol': 'Thin vol', ready: 'Ready',
+    building: 'Building', extended: 'Extended', fresh: 'Fresh gap', watch: 'Watch only'
+  };
 
   function renderCard(r, opts) {
     opts = opts || {};
@@ -279,19 +285,31 @@
   /* ---------------------------------------------------------- table view */
 
   var STATUS_ORDER = ['triggered', 'triggered-lowvol', 'ready', 'fresh', 'watch', 'building', 'extended'];
+  var GRADE_RANK = { 'A+': 4, 'A': 3, 'B': 2, 'C': 1 };
+
+  /* The four sortable columns.  Each accessor returns a number, or null when
+   * the value does not exist for that row — nulls sink to the bottom in both
+   * directions, because "unknown" is not the same as "smallest". */
+  var SORT_KEYS = {
+    grade: function (r) { return r.quality ? (GRADE_RANK[r.quality.grade] || 0) : null; },
+    score: function (r) { var s = setupOf(r); return s ? Math.round(s.score || 0) : null; },
+    rs:    function (r) { return r.rank && isFinite(r.rank.rsRating) ? r.rank.rsRating : null; },
+    cap:   function (r) { return isFinite(r.marketCap) && r.marketCap > 0 ? r.marketCap : null; }
+  };
 
   function visibleRows() {
     var res = state.lastRun;
     if (!res) return [];
     var f = state.filters;
-    return res.results.filter(function (r) {
+    var rows = res.results.filter(function (r) {
       if (!r.f) return false;
       var s = setupOf(r);
       if (!s) return false;
       if (f.eligibility === 'eligible' && !r.eligible) return false;
       if (f.eligibility === 'rejected' && r.eligible) return false;
       if (f.setup && s.type !== f.setup) return false;
-      if (f.status && (s.status || '') !== f.status) return false;
+      // No status ticked means no status filter — the usual multi-select idiom.
+      if (f.statuses.length && f.statuses.indexOf(s.status || '') < 0) return false;
       var score = Math.round(s.score || 0);
       if (score < f.minScore || score > f.maxScore) return false;
       var rs = r.rank && isFinite(r.rank.rsRating) ? r.rank.rsRating : null;
@@ -299,6 +317,29 @@
       else if (rs < f.minRs || rs > f.maxRs) return false;
       return true;
     });
+    return sortRows(rows);
+  }
+
+  function sortRows(rows) {
+    var get = SORT_KEYS[state.sort.key];
+    if (!get) return rows;              // no column picked: the engine's order
+    var dir = state.sort.dir === 'asc' ? 1 : -1;
+    // Array#sort is stable (ES2019), so ties keep the engine's ranking.
+    return rows.slice().sort(function (a, b) {
+      var x = get(a), y = get(b);
+      if (x === null && y === null) return 0;
+      if (x === null) return 1;
+      if (y === null) return -1;
+      return x === y ? 0 : (x < y ? -1 : 1) * dir;
+    });
+  }
+
+  /* Click cycle: first click sorts the column best-first, the second reverses
+   * it, the third hands the table back to the engine's own ranking. */
+  function toggleSort(key) {
+    if (state.sort.key !== key) state.sort = { key: key, dir: 'desc' };
+    else if (state.sort.dir === 'desc') state.sort.dir = 'asc';
+    else state.sort = { key: '', dir: 'desc' };
   }
 
   function renderTable() {
@@ -318,18 +359,25 @@
             return '<option value="' + v + '"' + (f.setup === v ? ' selected' : '') + '>' +
               (v ? SETUP_LABEL[v] : 'All') + '</option>';
           }).join('') + '</select></label>' +
-        '<label class="ff"><span>Status</span><select id="f-status">' +
-          [''].concat(statusOpts).map(function (v) {
-            return '<option value="' + v + '"' + (f.status === v ? ' selected' : '') + '>' +
-              (v ? (STATUS_TEXT[v] || v) : 'All') + '</option>';
-          }).join('') + '</select></label>' +
+        '<div class="ff"><span>Status <i>(multi-select)</i></span>' +
+          '<div class="chiprow" id="f-status">' +
+            '<label class="chip all' + (f.statuses.length ? '' : ' on') + '">' +
+              '<input type="checkbox" value=""' + (f.statuses.length ? '' : ' checked') + '><span>All</span></label>' +
+            statusOpts.map(function (v) {
+              var on = f.statuses.indexOf(v) >= 0;
+              return '<label class="chip' + (on ? ' on' : '') + '" title="' + esc(STATUS_TEXT[v] || v) + '">' +
+                '<input type="checkbox" value="' + v + '"' + (on ? ' checked' : '') + '>' +
+                '<span>' + esc(STATUS_SHORT[v] || STATUS_TEXT[v] || v) + '</span></label>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
         '<label class="ff"><span>Eligibility</span><select id="f-elig">' +
           [['all', 'All'], ['eligible', 'Eligible only'], ['rejected', 'Rejected only']].map(function (o) {
             return '<option value="' + o[0] + '"' + (f.eligibility === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
           }).join('') + '</select></label>' +
         slicer('score', 'Score', 0, 100, f.minScore, f.maxScore) +
         slicer('rs', 'RS rating', 1, 99, f.minRs, f.maxRs) +
-        '<button class="go ghost" id="f-reset" type="button">Clear filters</button>' +
+        '<button class="go ghost" id="f-reset" type="button">Clear filters &amp; sort</button>' +
         '<span class="fcount">' + rows.length + ' of ' +
           (state.lastRun ? state.lastRun.results.filter(function (r) { return r.f; }).length : 0) + '</span>' +
       '</div>';
@@ -359,13 +407,36 @@
     }).join('');
 
     return controls + '<div class="tbl-wrap"><table class="results">' +
-      '<caption>Click a symbol for its chart, criteria and plan — rejected names included</caption>' +
-      '<thead><tr><th>Symbol</th><th>Setup</th><th>Status</th><th>Eligible</th><th>Grade</th>' +
-      '<th class="num">Score</th><th class="num">RS</th><th class="num">Mkt cap</th><th class="num">ADR</th>' +
-      '<th class="num">1D</th><th class="num">5D</th><th class="num">Entry</th><th class="num">Stop</th>' +
-      '<th class="num">Risk</th><th class="num">ADR×</th><th class="num">Shares</th></tr></thead><tbody>' +
+      '<caption>Click a symbol for its chart, criteria and plan — rejected names included. ' +
+      'Grade, Score, RS and Mkt cap sort.</caption>' +
+      '<thead>' + renderHead() + '</thead><tbody>' +
       (body || '<tr><td colspan="16">Nothing matches these filters.</td></tr>') +
       '</tbody></table></div>';
+  }
+
+  /* Column headers.  A key makes the column sortable; `num` right-aligns it. */
+  var COLUMNS = [
+    ['Symbol', '', false], ['Setup', '', false], ['Status', '', false], ['Eligible', '', false],
+    ['Grade', 'grade', false], ['Score', 'score', true], ['RS', 'rs', true], ['Mkt cap', 'cap', true],
+    ['ADR', '', true], ['1D', '', true], ['5D', '', true], ['Entry', '', true], ['Stop', '', true],
+    ['Risk', '', true], ['ADR×', '', true], ['Shares', '', true]
+  ];
+
+  function renderHead() {
+    return '<tr>' + COLUMNS.map(function (c) {
+      var label = c[0], key = c[1], num = c[2];
+      var cls = num ? 'num' : '';
+      if (!key) return '<th' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(label) + '</th>';
+      var on = state.sort.key === key;
+      var dir = on ? state.sort.dir : '';
+      var next = !on ? 'sort ' + label + ' best first'
+        : dir === 'desc' ? 'reverse the ' + label + ' sort' : 'clear the ' + label + ' sort';
+      return '<th class="' + (cls ? cls + ' ' : '') + 'sortable' + (on ? ' sorted' : '') + '"' +
+        ' aria-sort="' + (on ? (dir === 'asc' ? 'ascending' : 'descending') : 'none') + '">' +
+        '<button class="sortbtn" type="button" data-sort="' + key + '" title="' + esc(next) + '">' +
+        esc(label) + '<span class="arrow" aria-hidden="true">' +
+        (on ? (dir === 'asc' ? '▲' : '▼') : '↕') + '</span></button></th>';
+    }).join('') + '</tr>';
   }
 
   function slicer(id, label, lo, hi, minVal, maxVal) {
@@ -410,8 +481,9 @@
     });
   }
 
-  /* Filter changes repaint only the rows, so the slider you are dragging is
-   * never torn out from under you. */
+  /* Filter and sort changes repaint only the head and the rows, so the slider
+   * you are dragging — and the chips you are ticking — are never torn out from
+   * under you. */
   function refreshTableBody() {
     var host = $('#results table.results tbody');
     if (!host) { render(); return; }
@@ -419,9 +491,39 @@
     var tmp = document.createElement('div');
     tmp.innerHTML = html;
     host.innerHTML = tmp.querySelector('table.results tbody').innerHTML;
+    var head = $('#results table.results thead');
+    if (head) { head.innerHTML = renderHead(); wireSortButtons(); }
     var count = tmp.querySelector('.fcount');
     if (count && $('.fcount')) $('.fcount').textContent = count.textContent;
     wireSymbolLinks();
+  }
+
+  function wireSortButtons() {
+    $$('#results th.sortable .sortbtn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        toggleSort(btn.getAttribute('data-sort'));
+        refreshTableBody();
+      });
+    });
+  }
+
+  /* "All" is a reset rather than a value: ticking it clears the others, and
+   * clearing the last real chip falls back to it. */
+  function wireStatusChips() {
+    var row = $('#f-status');
+    if (!row) return;
+    row.addEventListener('change', function (ev) {
+      var box = ev.target;
+      if (!box || box.type !== 'checkbox') return;
+      var boxes = $$('input[type="checkbox"]', row);
+      if (box.value === '') boxes.forEach(function (b) { b.checked = b.value === ''; });
+      var picked = boxes.filter(function (b) { return b.checked && b.value; })
+                        .map(function (b) { return b.value; });
+      boxes.forEach(function (b) { if (b.value === '') b.checked = !picked.length; });
+      boxes.forEach(function (b) { b.parentNode.classList.toggle('on', b.checked); });
+      state.filters.statuses = picked;
+      refreshTableBody();
+    });
   }
 
   function bindSlicer(id, minKey, maxKey) {
@@ -446,7 +548,9 @@
 
   function wireTableFilters() {
     wireSymbolLinks();
-    var pairs = [['#f-setup', 'setup'], ['#f-status', 'status'], ['#f-elig', 'eligibility']];
+    wireSortButtons();
+    wireStatusChips();
+    var pairs = [['#f-setup', 'setup'], ['#f-elig', 'eligibility']];
     pairs.forEach(function (pair) {
       var el = $(pair[0]);
       if (!el) return;
@@ -459,8 +563,9 @@
     bindSlicer('rs', 'minRs', 'maxRs');
     var reset = $('#f-reset');
     if (reset) reset.addEventListener('click', function () {
-      state.filters = { setup: '', status: '', eligibility: 'all',
+      state.filters = { setup: '', statuses: [], eligibility: 'all',
                         minScore: 0, maxScore: 100, minRs: 1, maxRs: 99 };
+      state.sort = { key: '', dir: 'desc' };
       render();
     });
   }

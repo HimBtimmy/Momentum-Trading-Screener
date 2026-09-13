@@ -305,13 +305,40 @@ ul.ttlist .dt { grid-column: 2; font: 400 11.5px/1.4 var(--font-mono); color: va
 
 /* ---- table filters and slicers ---------------------------------------- */
 .tablefilters {
-  display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: flex-end; margin-bottom: 14px;
+  display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; margin-bottom: 14px;
   padding: 14px 16px; background: var(--surface); border: 1px solid var(--rule); border-radius: 3px;
 }
-label.ff { display: flex; flex-direction: column; gap: 5px; }
-label.ff > span, .sl-label {
+.ff { display: flex; flex-direction: column; gap: 5px; }
+.ff > span, .sl-label {
   font: 500 9.5px/1 var(--font-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--ink-muted);
 }
+.ff > span i { font-style: normal; letter-spacing: .06em; opacity: .72; }
+
+/* ---- multi-select status chips ---------------------------------------- */
+.chiprow { display: flex; flex-wrap: wrap; gap: 5px; max-width: 420px; }
+.chip {
+  display: inline-flex; align-items: center; cursor: pointer; user-select: none;
+  border: 1px solid var(--rule); background: var(--surface-2); border-radius: 2px;
+  padding: 6px 8px; font: 500 10px/1 var(--font-mono); letter-spacing: .07em;
+  text-transform: uppercase; color: var(--ink-muted);
+}
+.chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+.chip:hover { border-color: var(--ink-secondary); color: var(--ink-primary); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ---- sortable column headers ------------------------------------------ */
+th.sortable { padding-right: 0; }
+.sortbtn {
+  appearance: none; background: none; border: 0; cursor: pointer; width: 100%;
+  display: inline-flex; align-items: baseline; gap: 5px; padding: 0 12px 8px 0;
+  font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit;
+}
+th.num .sortbtn { justify-content: flex-end; }
+.sortbtn:hover { color: var(--ink-primary); }
+.sortbtn .arrow { font-size: 9px; opacity: .38; }
+th.sorted .sortbtn { color: var(--accent); }
+th.sorted .sortbtn .arrow { opacity: 1; }
 .slicer { display: flex; flex-direction: column; gap: 4px; min-width: 168px; }
 .sl-body { display: grid; gap: 2px; }
 .sl-body input[type="range"] { width: 100%; accent-color: var(--accent); height: 18px; margin: 0; }
