@@ -54,6 +54,7 @@
     psMinExtensionAdr: 3.0,   // ADRs above the 20-day EMA
     psMinRsi: 75,
     // --- risk ---------------------------------------------------------------
+    stopTick: 0.01,           // the stop sits one tick beyond the anchor bar's extreme
     stopAdrCap: 1.0,          // "stop should never be wider than 1x ADR"
     stopAdrHardCap: 1.5,      // "maximum 1.5x"
     riskPctPerTrade: 0.5,     // 0.25-1%, typically 0.3-0.5%
@@ -158,12 +159,15 @@
       ema10: ema(closes, 10),
       ema20: ema(closes, 20),
       sma50: sma(closes, 50),
+      sma150: sma(closes, 150),
       sma200: sma(closes, 200),
       rsi14: rsi(closes, 14),
       tr: trueRanges(bars),
       adr: adrPct(bars, 20),
       avgVol20: avgVol(bars, 20),
       dollarVol20: avgDollarVol(bars, 20),
+      ret1d: pctChange(bars, 1),
+      ret5d: pctChange(bars, 5),
       ret1m: pctChange(bars, DEFAULTS.rsWindows.m1),
       ret3m: pctChange(bars, DEFAULTS.rsWindows.m3),
       ret6m: pctChange(bars, DEFAULTS.rsWindows.m6),
@@ -313,8 +317,12 @@
     };
   }
 
-  function longPlan(f, pivot, structuralStop, cfg, kind) {
+  function longPlan(f, pivot, structuralLow, cfg, kind) {
     var entry = pivot * (1 + cfg.triggerBuffer);
+    // The stop goes one tick UNDER the low it is anchored to: resting exactly on
+    // the low gets filled by a tick-for-tick retest that never breaks the level.
+    var tick = num(cfg.stopTick) ? cfg.stopTick : 0.01;
+    var structuralStop = structuralLow - tick;
     var adrStop = entry * (1 - f.adr / 100);
     var stop = Math.max(structuralStop, adrStop);   // the tighter of the two
     var riskPct = (entry - stop) / entry * 100;
@@ -326,8 +334,8 @@
                                                                 : '1-min / 5-min / 60-min opening-range high') +
                  ' once price clears ' + round(pivot, 2) + '.',
       stop: stop,
-      stopRule: 'Hard stop at the low of the entry day' +
-                (structuralStop > adrStop ? ' (structural low ' + round(structuralStop, 2) + ').'
+      stopRule: 'Hard stop one tick under the low of the entry day' +
+                (structuralStop > adrStop ? ' (' + round(structuralLow, 2) + ' low, stop ' + round(structuralStop, 2) + ').'
                                           : ', held to ' + cfg.stopAdrCap + 'x ADR because the structural low is wider.'),
       riskPct: riskPct,
       structuralRiskPct: structRiskPct,
@@ -345,8 +353,10 @@
     return plan;
   }
 
-  function shortPlan(f, trigger, structuralStop, cfg) {
+  function shortPlan(f, trigger, structuralHigh, cfg) {
     var entry = trigger * (1 - cfg.triggerBuffer);
+    var tick = num(cfg.stopTick) ? cfg.stopTick : 0.01;
+    var structuralStop = structuralHigh + tick;   // one tick above the anchor high
     var adrStop = entry * (1 + f.adr / 100);
     var stop = Math.min(structuralStop, adrStop);
     var riskPct = (stop - entry) / entry * 100;
@@ -358,7 +368,7 @@
       entryRule: 'Short the first break of the opening-range low (1- or 5-min), the first red 5-min candle after a gap up, ' +
                  'or a failed bounce back into VWAP - never on day one of the move.',
       stop: stop,
-      stopRule: 'Hard stop at the high of the day, or a reclaim of VWAP if VWAP was the trigger' +
+      stopRule: 'Hard stop one tick above the high of the day, or a reclaim of VWAP if VWAP was the trigger' +
                 (structuralStop < adrStop ? '.' : ', held to ' + cfg.stopAdrCap + 'x ADR.'),
       riskPct: riskPct,
       structuralRiskPct: structRiskPct,
@@ -630,58 +640,253 @@
     };
   }
 
+  /* ------------------------------------------------------- trend template
+   * Mark Minervini's eight-point trend template. Qullamaggie's screen and
+   * Minervini's overlap but are not the same test: the flag mechanics can be
+   * perfect on a stock whose longer-term structure is still repairing. We run
+   * both and let the justification say which is which, rather than silently
+   * calling everything textbook.                                            */
+
+  function trendTemplate(f, rank) {
+    var i = f.n - 1;
+    var c = f.price;
+    var s50 = f.sma50[i], s150 = f.sma150[i], s200 = f.sma200[i];
+    var s200Prior = f.sma200[i - 20];
+    var rs = rank && num(rank.rsRating) ? rank.rsRating : null;
+    var items = [
+      { label: 'Price above the 150- and 200-day MA',
+        pass: num(s150) && num(s200) && c > s150 && c > s200,
+        detail: num(s150) && num(s200)
+          ? round(c, 2) + ' vs 150MA ' + round(s150, 2) + ' / 200MA ' + round(s200, 2)
+          : 'not enough history' },
+      { label: '150-day MA above the 200-day',
+        pass: num(s150) && num(s200) && s150 > s200,
+        detail: num(s150) && num(s200) ? round(s150, 2) + ' vs ' + round(s200, 2) : 'not enough history' },
+      { label: '200-day MA trending up for at least a month',
+        pass: num(s200) && num(s200Prior) && s200 > s200Prior,
+        detail: num(s200) && num(s200Prior)
+          ? (s200 / s200Prior - 1 >= 0 ? '+' : '') + round((s200 / s200Prior - 1) * 100, 1) + '% over 20 sessions'
+          : 'not enough history' },
+      { label: '50-day MA above both the 150- and 200-day',
+        pass: num(s50) && num(s150) && num(s200) && s50 > s150 && s50 > s200,
+        detail: num(s50) ? '50MA ' + round(s50, 2) : 'not enough history' },
+      { label: 'Price above the 50-day MA',
+        pass: num(s50) && c > s50,
+        detail: num(s50) ? round((c / s50 - 1) * 100, 1) + '% above the 50MA' : 'not enough history' },
+      { label: 'At least 30% above the 52-week low',
+        pass: f.pctFrom52Low >= 30,
+        detail: round(f.pctFrom52Low, 0) + '% above the 52-week low' },
+      { label: 'Within 25% of the 52-week high',
+        pass: f.pctOff52High <= 25,
+        detail: round(f.pctOff52High, 1) + '% off the 52-week high' },
+      { label: 'RS rating 70 or better',
+        pass: rs == null ? null : rs >= 70,        // null = cannot be assessed
+        detail: rs != null ? 'RS ' + rs : 'not assessable — no universe to rank against' }
+    ];
+    // A criterion we cannot measure is excluded from the score rather than
+    // counted as a failure: screening one symbol on its own gives no RS rank.
+    var assessable = items.filter(function (x) { return x.pass !== null; });
+    var passed = assessable.filter(function (x) { return x.pass; }).length;
+    return { items: items, passed: passed, total: assessable.length,
+             unassessed: items.length - assessable.length, rsRating: rs };
+  }
+
+  /* ------------------------------------------------------------- quality
+   * Grades a setup that has already passed the mechanical screen. The point is
+   * NOT to exclude weak-momentum names - they are still tradeable under his
+   * rules - but to say plainly where a candidate sits, and to attach the
+   * specific caveats a trader should price in before taking it.             */
+
+  var GRADES = {
+    'A+': { label: 'A+ — textbook', blurb: 'This is the textbook version of the setup' },
+    'A':  { label: 'A — high quality', blurb: 'A high-quality setup' },
+    'B':  { label: 'B — tradeable, second tier', blurb: 'A mechanically valid but second-tier setup' },
+    'C':  { label: 'C — mechanically qualifies only',
+            blurb: 'This one clears the mechanical screen without the trend structure behind it' }
+  };
+
+  function assessQuality(f, setup, cfg, rank, regime) {
+    var tt = trendTemplate(f, rank);
+    var strengths = [], caveats = [];
+    var rs = tt.rsRating;
+
+    // ---- trend structure ------------------------------------------------
+    var failedTT = tt.items.filter(function (x) { return x.pass === false; });
+    if (tt.passed === tt.total) {
+      strengths.push('it passes all ' + tt.total + ' of the Minervini trend-template tests that can be measured here');
+    } else if (tt.passed >= tt.total - 2) {
+      strengths.push('it passes ' + tt.passed + ' of ' + tt.total + ' Minervini trend-template tests');
+    }
+    if (failedTT.length) {
+      caveats.push('it fails ' + failedTT.length + ' of Minervini\'s trend-template tests (' +
+        failedTT.map(function (x) { return x.label.toLowerCase(); }).join('; ') + ')');
+    }
+    if (tt.unassessed) {
+      caveats.push('relative strength could not be ranked — this symbol was screened on its own rather than ' +
+        'against a universe, so the RS test is unscored');
+    }
+
+    // ---- relative strength ----------------------------------------------
+    if (rs != null) {
+      if (rs >= 90) strengths.push('relative strength is in the top decile of the screened universe (RS ' + rs + ')');
+      else if (rs < 70) caveats.push('relative strength is only RS ' + rs +
+        ', below the 70 floor Minervini treats as a minimum and well below the 80-90 where leadership lives — ' +
+        'this is a momentum setup on a stock that is not yet a momentum leader');
+    }
+
+    // ---- volatility fit --------------------------------------------------
+    if (f.adr >= cfg.goodAdr) strengths.push('ADR is leader-grade at ' + round(f.adr, 1) + '%');
+    else caveats.push('ADR of ' + round(f.adr, 1) + '% is below the 5-6% he looks for, so the same number of ' +
+      'R takes proportionally longer to arrive and the trade ties up capital for more time');
+
+    // ---- position in the larger move ------------------------------------
+    if (f.pctOff52High > 25) {
+      caveats.push('it sits ' + round(f.pctOff52High, 0) + '% below its 52-week high, which makes this a repair ' +
+        'pattern rather than a leadership breakout into blue sky');
+    } else if (f.pctOff52High <= 5) {
+      strengths.push('it is within ' + round(f.pctOff52High, 1) + '% of its 52-week high, so there is little ' +
+        'trapped supply overhead');
+    }
+
+    // ---- setup-specific --------------------------------------------------
+    if (setup.type === 'breakout' && setup.base) {
+      var b = setup.base;
+      if (b.higherLows && b.contraction <= 0.85 && b.volRatio <= 0.8) {
+        strengths.push('the base has the full signature — rising lows, a ' + round(b.contraction, 2) +
+          'x range contraction and volume down to ' + round(b.volRatio, 2) + 'x the advance');
+      }
+      if (!b.higherLows) caveats.push('the lows through the base are flat or falling rather than rising, which is ' +
+        'the difference between accumulation and a stock merely pausing');
+      if (b.volRatio > 1.0) caveats.push('volume through the base ran at ' + round(b.volRatio, 2) +
+        'x the volume of the advance — supply is still being distributed into the range');
+      if (b.contraction > 1.0) caveats.push('the daily range widened through the base instead of contracting');
+      if (b.depthPct > b.depthCapPct * 0.85) caveats.push('at ' + round(b.depthPct, 1) +
+        '% the base is close to the ' + round(b.depthCapPct, 1) + '% its ADR would justify — deeper bases fail more often');
+      if (b.leg.pct < 40) caveats.push('the prior leg was only ' + round(b.leg.pct, 0) +
+        '%, modest for a setup whose edge comes from continuation of a powerful move');
+      if (setup.status === 'triggered-lowvol') caveats.push('the breakout printed on ' + round(setup.rvol, 1) +
+        'x average volume — a range expansion without volume expansion is the classic failed breakout');
+      if (setup.status === 'extended') caveats.push('price is already ' + round(setup.extendedPct, 1) +
+        '% past the pivot, so the low-risk entry has gone');
+    }
+    if (setup.type === 'ep') {
+      if (setup.rvol >= 5) strengths.push('the gap came on ' + round(setup.rvol, 1) + 'x normal volume');
+      else if (setup.rvol < cfg.epMinRvol) caveats.push('volume was only ' + round(setup.rvol, 1) +
+        'x average — the setup wants the full average daily volume inside the first 15-20 minutes, and a quiet ' +
+        'gap is usually sold');
+      if (setup.closeInRangePct < 50) caveats.push('it closed in the bottom ' + round(setup.closeInRangePct, 0) +
+        '% of the gap day\'s range, so the buyers who made the gap did not stay for the bell');
+      if (setup.baseRangePct > cfg.epBaseMaxRange * 0.8) caveats.push('the prior ' + cfg.epBaseWindow +
+        ' sessions spanned ' + round(setup.baseRangePct, 0) + '%, so this is not the dormant, forgotten base the ' +
+        'setup depends on — there is trapped supply above');
+    }
+    if (setup.type === 'parabolic') {
+      if (!setup.weakness.length) caveats.push('there is still no sign of weakness, so this is a watch-list entry ' +
+        'and not a trade');
+      if (setup.extensionAdr >= 6) strengths.push('it is stretched ' + round(setup.extensionAdr, 1) +
+        ' ADRs above the 20-day EMA');
+    }
+
+    // ---- risk and regime -------------------------------------------------
+    var planAdr = setup.plan ? Math.abs(setup.plan.riskPct) / f.adr : null;
+    if (setup.plan && !setup.plan.stopWithinAdr) {
+      caveats.push('the structural stop is wider than one ADR, so the level below is the ADR cap rather than the ' +
+        'chart — if the trigger day closes with its low further away than that, his rule is to skip the trade');
+    } else if (planAdr != null && planAdr <= 0.6) {
+      strengths.push('risk is only ' + round(planAdr, 2) + 'x ADR, so one average day of follow-through pays ' +
+        'roughly ' + round(1 / planAdr, 1) + 'R');
+    }
+    if (regime && regime.state && regime.state !== 'uptrend' && setup.plan && setup.plan.side !== 'short') {
+      caveats.push('the index is ' + regime.label.toLowerCase() + ', and long breakouts fail disproportionately ' +
+        'in that tape');
+    }
+
+    // ---- grade -----------------------------------------------------------
+    var baseQuality = setup.type === 'breakout' && setup.base ? setup.base.quality : 60;
+    var grade;
+    var hardCaveats = caveats.length - (tt.unassessed ? 1 : 0);   // an unscored test is not a flaw
+    if (tt.passed === tt.total && setup.score >= 72 && baseQuality >= 62 && hardCaveats <= 1) grade = 'A+';
+    else if (tt.passed >= tt.total - 1 && setup.score >= 62 && hardCaveats <= 3) grade = 'A';
+    else if (tt.passed >= Math.ceil(tt.total * 0.6)) grade = 'B';
+    else grade = 'C';
+    // a setup nobody can enter cheaply is not an A, whatever the structure says
+    if (grade !== 'C' && setup.plan && !setup.plan.stopWithinAdr && grade === 'A+') grade = 'A';
+
+    return {
+      grade: grade, label: GRADES[grade].label, blurb: GRADES[grade].blurb,
+      trendTemplate: tt, strengths: strengths, caveats: caveats,
+      rsRating: rs, ttPassed: tt.passed
+    };
+  }
+
   /* --------------------------------------------------------- justification */
 
   function justify(sym, f, setup, cfg, rank, regime) {
     var s = [], p = setup;
-    var adrWord = f.adr >= 8 ? 'very high' : f.adr >= cfg.goodAdr ? 'leader-grade' : 'workable';
-    var head = sym + ' trades at $' + round(f.price, 2) + ' with a ' + pct(f.adr) + ' ADR (' + adrWord +
-      ') and ' + money(f.dollarVol20) + ' of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out.';
-    var rsTxt = 'It is up ' + pct(f.ret1m) + ' over one month, ' + pct(f.ret3m) + ' over three and ' + pct(f.ret6m) +
-      ' over six' + (rank && num(rank.best) ? ', which ranks it in the top ' + round(rank.best, 0) + '% of the screened universe on its best lookback' : '') +
-      ', and it sits ' + pct(f.pctOff52High) + ' off its 52-week high.';
+    var q = p.quality || assessQuality(f, p, cfg, rank, regime);
+    var adrWord = f.adr >= 8 ? 'very high' : f.adr >= cfg.goodAdr ? 'leader-grade' : 'modest';
+    var rs = q.rsRating;
+
+    s.push(sym + ' trades at $' + round(f.price, 2) + ' with a ' + pct(f.adr) + ' ADR (' + adrWord +
+      ') and ' + money(f.dollarVol20) + ' of average daily turnover, so it is ' +
+      (f.adr >= cfg.goodAdr ? 'volatile enough to pay multiples of risk in days' :
+        'liquid enough to trade cleanly, though its daily range is on the slow side for this strategy') +
+      '. It is up ' + pct(f.ret1m) + ' over one month, ' + pct(f.ret3m) + ' over three and ' + pct(f.ret6m) +
+      ' over six' + (rs != null ? ', an RS rating of ' + rs : '') +
+      ', and it sits ' + pct(f.pctOff52High) + ' off its 52-week high.');
 
     if (p.type === 'breakout') {
       var b = p.base;
-      s.push(head);
-      s.push(rsTxt);
-      s.push('The pattern is the textbook continuation setup: a ' + pct(b.leg.pct) + ' advance over ' + b.leg.bars +
-        ' sessions beginning ' + b.leg.startDate + ', followed by ' + b.len + ' sessions of orderly consolidation since ' +
-        b.startDate + '. That base is only ' + pct(b.depthPct) + ' deep against the ' + pct(b.depthCapPct) +
-        ' its ADR would allow, ' + (b.higherLows ? 'lows are rising (' + (b.lowsSlopePct >= 0 ? '+' : '') + pct(b.lowsSlopePct) +
-        ' back-half vs front-half)' : 'lows are flat rather than rising') + ', the daily range has contracted to ' +
-        round(b.contraction, 2) + 'x what it was at the start of the base, and volume has dried up to ' + round(b.volRatio, 2) +
-        'x the volume of the advance. Price spent ' + round(b.aboveSma50Frac * 100, 0) + '% of the base above a ' +
-        (p.trend.parts.indexOf('50MA rising') >= 0 ? 'rising' : 'flat') + ' 50-day MA while hugging the 20-day EMA - the "surfing" behaviour that marks institutional accumulation rather than distribution.');
-      s.push(p.status === 'triggered' ? 'It cleared the ' + round(p.pivot, 2) + ' pivot on ' + p.breakoutDate + ' on ' + round(p.rvol, 1) +
-        'x average volume with a ' + round(p.rangeExpansion, 1) + 'x range expansion, which is the trigger.'
+      s.push(q.blurb + ': a ' + pct(b.leg.pct) + ' advance over ' + b.leg.bars +
+        ' sessions beginning ' + b.leg.startDate + ', then ' + b.len + ' sessions of consolidation since ' +
+        b.startDate + '. The base is ' + pct(b.depthPct) + ' deep against the ' + pct(b.depthCapPct) +
+        ' its ADR would allow, ' + (b.higherLows ? 'lows are rising (' + (b.lowsSlopePct >= 0 ? '+' : '') +
+        pct(b.lowsSlopePct) + ' back-half vs front-half)' : 'the lows are flat rather than rising') +
+        ', the daily range has moved to ' + round(b.contraction, 2) + 'x what it was at the start of the base, ' +
+        'and volume has run at ' + round(b.volRatio, 2) + 'x the volume of the advance. Price spent ' +
+        round(b.aboveSma50Frac * 100, 0) + '% of the base above the 50-day MA while hugging the 20-day EMA.');
+      s.push(p.status === 'triggered' ? 'It cleared the ' + round(p.pivot, 2) + ' pivot on ' + p.breakoutDate +
+        ' on ' + round(p.rvol, 1) + 'x average volume with a ' + round(p.rangeExpansion, 1) +
+        'x range expansion, which is the trigger.'
         : p.status === 'extended' ? 'It has already run ' + pct(p.extendedPct) + ' past the ' + round(p.pivot, 2) +
-        ' pivot (' + round(p.extendedPct / f.adr, 1) + ' ADRs), so the low-risk entry is gone - chasing here puts the stop more than one ADR away.'
-        : p.status === 'triggered-lowvol' ? 'It has cleared the ' + round(p.pivot, 2) + ' pivot but only on ' + round(p.rvol, 1) +
-        'x volume - a breakout without volume expansion is the one to treat with suspicion.'
-        : 'The trigger sits ' + pct(p.distToPivotPct) + ' overhead at ' + round(p.pivot, 2) + ', inside one ADR, so it is actionable on the next range expansion.');
+        ' pivot (' + round(p.extendedPct / f.adr, 1) + ' ADRs), so the low-risk entry is gone.'
+        : p.status === 'triggered-lowvol' ? 'It has cleared the ' + round(p.pivot, 2) + ' pivot, but on only ' +
+        round(p.rvol, 1) + 'x volume.'
+        : 'The trigger sits ' + pct(p.distToPivotPct) + ' overhead at ' + round(p.pivot, 2) +
+        ', inside one ADR, so it is actionable on the next range expansion.');
     } else if (p.type === 'ep') {
-      s.push(head);
-      s.push('This is an episodic pivot, not a chart pattern: ' + sym + ' gapped ' + pct(p.gap) + ' on ' + p.gapDate +
-        ' on ' + round(p.rvol, 1) + 'x its average volume, after spending the prior ' + cfg.epBaseWindow +
-        ' sessions in a ' + pct(p.baseRangePct) + ' range. Dormancy is the feature, not a bug - the best EPs come out of stocks nobody was watching, because the gap forces a repricing that institutions then have to chase for weeks.');
-      s.push('It closed in the top ' + round(100 - p.closeInRangePct, 0) + '% of the gap day\'s range, so buyers held the gap into the bell rather than selling it. ' + rsTxt);
+      s.push(q.blurb + ', and an episodic pivot rather than a chart pattern: ' + sym + ' gapped ' + pct(p.gap) +
+        ' on ' + p.gapDate + ' on ' + round(p.rvol, 1) + 'x its average volume, after spending the prior ' +
+        cfg.epBaseWindow + ' sessions in a ' + pct(p.baseRangePct) + ' range. It closed in the top ' +
+        round(100 - p.closeInRangePct, 0) + '% of the gap day\'s range.' +
+        (p.baseRangePct <= cfg.epBaseMaxRange * 0.6
+          ? ' Dormancy is the feature here: a stock nobody was positioned in has no trapped supply overhead, ' +
+            'so the repricing has to be chased.' : ''));
       s.push(p.plan.intradayNote);
     } else {
-      s.push(head);
-      s.push(sym + ' has gone parabolic: ' + pct(p.bestMove) + ' at its fastest over the last 5-20 sessions, ' + p.upDays +
-        ' consecutive up closes, RSI(14) at ' + round(p.rsi, 0) + ', and price stretched ' + round(p.extensionAdr, 1) +
-        ' ADRs above its 20-day EMA. Moves like this end in a vacuum, not a rounded top.');
-      s.push(p.weakness.length ? 'The first crack has appeared - it ' + p.weakness.join(' and ') +
-        ' - which is the only condition under which this setup is tradeable. Never short day one or two of a parabolic move.'
-        : 'There is still no sign of weakness, so this is a watch-list name only: shorting a stock that is still going straight up is how accounts die.');
+      s.push(q.blurb + ' on the short side: ' + sym + ' is up ' + pct(p.bestMove) +
+        ' at its fastest over the last 5-20 sessions, ' + p.upDays + ' consecutive up closes, RSI(14) at ' +
+        round(p.rsi, 0) + ', and price stretched ' + round(p.extensionAdr, 1) + ' ADRs above its 20-day EMA.');
+      s.push(p.weakness.length ? 'The first crack has appeared — it ' + p.weakness.join(' and ') +
+        ' — which is the only condition under which this setup is tradeable.'
+        : 'There is still no sign of weakness, so this is a watch-list name only.');
       s.push(p.plan.targetNote);
     }
-    if (regime && regime.state && regime.state !== 'uptrend') {
-      s.push('Regime caveat: the index is ' + regime.label.toLowerCase() + ', and breakouts fail disproportionately in that tape - ' +
-             (p.side === 'short' ? 'which favours the short side, but keep size modest.' : 'so cut size, take partials faster, or stand aside.'));
+
+    if (q.strengths.length) {
+      s.push('In its favour: ' + joinList(q.strengths) + '.');
+    }
+    if (q.caveats.length) {
+      s.push('Caveats — ' + joinList(q.caveats) + '.');
+    } else {
+      s.push('No structural caveats: the trend template, the base and the risk all line up.');
     }
     return s.join(' ');
+  }
+
+  function joinList(items) {
+    if (items.length === 1) return items[0];
+    return items.slice(0, -1).join('; ') + '; and ' + items[items.length - 1];
   }
 
   function planText(sym, f, setup) {
@@ -771,6 +976,18 @@
         r.rank[key] = (idx < 0 ? 100 : (idx / vals.length) * 100);
       });
     });
+    // Market-cap percentile across the screened universe (0 = largest).
+    var caps = liquid.map(function (r) { return num(r.meta && r.meta.marketCap) ? r.meta.marketCap : NaN; })
+                     .filter(num).slice().sort(function (a, b) { return b - a; });
+    liquid.forEach(function (r) {
+      var mc = r.meta && r.meta.marketCap;
+      if (num(mc) && caps.length) {
+        var ci = caps.findIndex(function (x) { return x <= mc; });
+        r.marketCap = mc;
+        r.marketCapPct = (ci < 0 ? 100 : ci / caps.length * 100);
+      }
+    });
+
     liquid.forEach(function (r) {
       if (!r.rank) return;
       r.rank.best = Math.min(
@@ -781,27 +998,53 @@
         num(r.rank.ret1m) ? r.rank.ret1m : 100,
         num(r.rank.ret3m) ? r.rank.ret3m : 100,
         num(r.rank.ret6m) ? r.rank.ret6m : 100);
+      // RS rating in the familiar 1-99 convention: 99 is the strongest name in
+      // the universe, 1 the weakest. rank.best is a "top N%" figure, so invert.
+      if (num(r.rank.best)) r.rank.rsRating = clamp(Math.round(100 - r.rank.best), 1, 99);
     });
 
     // pass 3: setups
     var results = [];
+    var capGate = num(cfg.marketCapTopPct) && cfg.marketCapTopPct > 0 && cfg.marketCapTopPct < 100
+      ? cfg.marketCapTopPct : null;
+
     pool.forEach(function (r) {
-      if (!r.f) { results.push({ symbol: r.symbol, skipped: r.skipped, setups: [] }); return; }
+      if (!r.f) { results.push({ symbol: r.symbol, skipped: r.skipped, setups: [], eligible: false }); return; }
       var f = r.f, cand = [];
       if (enabled.breakout) cand.push(detectBreakout(f, cfg, r.rank));
       if (enabled.ep) cand.push(detectEP(f, cfg, r.rank));
       if (enabled.parabolic) cand.push(detectParabolic(f, cfg, r.meta));
-      var eligible = cand.filter(function (c) { return c.eligible; });
-      eligible.sort(function (a, b) { return b.score - a.score; });
-      var best = eligible[0] || null;
+
+      var byScore = function (a, b) { return (b.score || 0) - (a.score || 0); };
+      var eligible = cand.filter(function (c) { return c.eligible; }).sort(byScore);
+
+      // Outside the market-cap band the name is still analysed - it just cannot
+      // be traded from this screen, and the reason is recorded.
+      var capReason = null;
+      if (capGate) {
+        if (!num(r.marketCapPct)) capReason = 'no market cap available to rank';
+        else if (r.marketCapPct > capGate) capReason = 'market cap outside the top ' + capGate + '% of the universe';
+      }
+      var best = capReason ? null : (eligible[0] || null);
+
+      // A "display" setup exists even for rejects, so the UI can show the chart
+      // and the failing criteria for any symbol the user clicks.
+      var display = eligible[0] || cand.slice().sort(byScore)[0] || null;
+      if (display && display.plan) display.quality = assessQuality(f, display, cfg, r.rank, regime);
+
       var rec = {
         symbol: r.symbol, name: r.name, sector: r.sector, f: f, rank: r.rank || null,
-        setups: cand, best: best, eligible: !!best, regime: regime,
-        score: best ? best.score : Math.max.apply(null, cand.map(function (c) { return c.score || 0; }).concat([0]))
+        marketCap: num(r.marketCap) ? r.marketCap : (r.meta && num(r.meta.marketCap) ? r.meta.marketCap : null),
+        marketCapPct: num(r.marketCapPct) ? r.marketCapPct : null,
+        setups: cand, best: best, display: display, eligible: !!best, regime: regime,
+        capReason: capReason,
+        quality: display && display.quality ? display.quality : null,
+        score: (best || display) ? (best || display).score : 0
       };
-      if (best) {
-        rec.justification = justify(r.symbol, f, best, cfg, r.rank, regime);
-        rec.planText = planText(r.symbol, f, best);
+      if (display && display.plan) {
+        rec.justification = justify(r.symbol, f, display, cfg, r.rank, regime);
+        rec.planText = planText(r.symbol, f, display);
+        rec.hypothetical = !best;   // shown for context; not a tradeable signal
       }
       results.push(rec);
     });
@@ -819,21 +1062,42 @@
 
   /* ------------------------------------------------------------------- csv */
 
+  /* RFC4180-ish field splitter: quoted fields may contain commas and escaped
+   * quotes, which a plain split(',') would tear apart. */
+  function splitCsvLine(line) {
+    var out = [], cur = '', inQuotes = false, i, ch;
+    for (i = 0; i < line.length; i++) {
+      ch = line[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') { cur += '"'; i++; }
+          else inQuotes = false;
+        } else cur += ch;
+      } else if (ch === '"') inQuotes = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+
   function parseCSV(text) {
     var lines = text.replace(/\r/g, '').split('\n').filter(function (l) { return l.trim().length; });
     if (!lines.length) return [];
-    var head = lines[0].split(',').map(function (h) { return h.trim().toLowerCase(); });
+    var head = splitCsvLine(lines[0]).map(function (h) { return h.trim().toLowerCase(); });
     var ix = {
       symbol: head.findIndex(function (h) { return /^(symbol|ticker|sym)$/.test(h); }),
       date: head.findIndex(function (h) { return /^(date|timestamp|time)$/.test(h); }),
       open: head.indexOf('open'), high: head.indexOf('high'), low: head.indexOf('low'),
       close: head.findIndex(function (h) { return /^(close|adj close|adjclose)$/.test(h); }),
-      volume: head.findIndex(function (h) { return /^(volume|vol)$/.test(h); })
+      volume: head.findIndex(function (h) { return /^(volume|vol)$/.test(h); }),
+      marketCap: head.findIndex(function (h) { return /^(marketcap|market_cap|mktcap|cap)$/.test(h); }),
+      name: head.findIndex(function (h) { return /^(name|company|security)$/.test(h); })
     };
     if (ix.date < 0 || ix.close < 0) throw new Error('CSV needs at least date and close columns (got: ' + head.join(', ') + ')');
-    var bySym = {};
+    var bySym = {}, meta = {};
     lines.slice(1).forEach(function (line) {
-      var c = line.split(',');
+      var c = splitCsvLine(line);
       var sym = ix.symbol >= 0 ? (c[ix.symbol] || '').trim().toUpperCase() : 'IMPORT';
       var bar = {
         date: (c[ix.date] || '').trim().slice(0, 10),
@@ -845,10 +1109,19 @@
       };
       if (!bar.date || !num(bar.close)) return;
       (bySym[sym] = bySym[sym] || []).push(bar);
+      meta[sym] = meta[sym] || {};
+      if (ix.marketCap >= 0 && !meta[sym].marketCap) {
+        var mc = parseFloat(c[ix.marketCap]);
+        if (num(mc) && mc > 0) meta[sym].marketCap = mc;
+      }
+      if (ix.name >= 0 && !meta[sym].name && (c[ix.name] || '').trim()) {
+        meta[sym].name = c[ix.name].trim();
+      }
     });
     return Object.keys(bySym).map(function (sym) {
       var bars = bySym[sym].sort(function (a, b) { return a.date < b.date ? -1 : 1; });
-      return { symbol: sym, name: sym, bars: bars, source: 'csv' };
+      var m = meta[sym] || {};
+      return { symbol: sym, name: m.name || sym, marketCap: m.marketCap || null, bars: bars, source: 'csv' };
     });
   }
 
@@ -861,6 +1134,7 @@
     longPlan: longPlan, shortPlan: shortPlan, sizePosition: sizePosition,
     detectBreakout: detectBreakout, detectEP: detectEP, detectParabolic: detectParabolic,
     justify: justify, planText: planText, regimeFromIndex: regimeFromIndex,
-    screen: screen, parseCSV: parseCSV, money: money, pctFmt: pct, trendScore: trendScore
+    trendTemplate: trendTemplate, assessQuality: assessQuality,
+    screen: screen, parseCSV: parseCSV, splitCsvLine: splitCsvLine, money: money, pctFmt: pct, trendScore: trendScore
   };
 });

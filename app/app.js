@@ -14,6 +14,19 @@
   var esc = function (s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };
+  var setupOf = function (r) { return r.best || r.display || null; };
+  var capTxt = function (x) {
+    if (!isFinite(x) || !x) return '—';
+    if (x >= 1e12) return '$' + (x / 1e12).toFixed(2) + 'T';
+    if (x >= 1e9) return '$' + (x / 1e9).toFixed(1) + 'B';
+    if (x >= 1e6) return '$' + (x / 1e6).toFixed(0) + 'M';
+    return '$' + Math.round(x).toLocaleString();
+  };
+  var signed = function (x, d) {
+    if (!isFinite(x)) return '—';
+    var v = Math.round(x * Math.pow(10, d || 1)) / Math.pow(10, d || 1);
+    return (v > 0 ? '+' : '') + v + '%';
+  };
   var pctTxt = function (x, d) { return (isFinite(x) ? (Math.round(x * Math.pow(10, d || 1)) / Math.pow(10, d || 1)) : '—') + '%'; };
 
   /* ------------------------------------------------------------ app state */
@@ -24,9 +37,12 @@
     asOf: null,
     view: 'cards',
     showRejects: false,
+    detail: null,                       // symbol shown in the detail overlay
+    filters: { setup: '', status: '', eligibility: 'all',
+               minScore: 0, maxScore: 100, minRs: 1, maxRs: 99 },
     settings: {
       accountEquity: 100000, riskPctPerTrade: 0.5, maxPositionPct: 20,
-      minPrice: 5, minAdr: 3.5, minDollarVol: 5e6,
+      minPrice: 5, minAdr: 3.5, minDollarVol: 5e6, marketCapTopPct: 100,
       setups: { breakout: true, ep: true, parabolic: true }
     },
     lastRun: null,
@@ -72,7 +88,8 @@
     var uni = activeUniverse().filter(function (u) { return u.bars.length >= 130; });
     var skipped = activeUniverse().length - uni.length;
     var opts = Object.assign({}, state.settings, {
-      indexBars: state.indexBars ? truncate(state.indexBars, state.asOf) : null
+      indexBars: state.indexBars ? truncate(state.indexBars, state.asOf) : null,
+      marketCapTopPct: state.settings.marketCapTopPct
     });
     var res = uni.length ? QM.screen(uni, opts) : { results: [], counts: { universe: 0, eligible: 0 }, regime: null };
     res.skipped = skipped;
@@ -90,18 +107,37 @@
       host.innerHTML = '<p class="empty">No symbols loaded yet. Load the demo universe, or import a CSV of daily bars.</p>';
       return;
     }
-    var eligible = res.results.filter(function (r) { return r.eligible; });
-    var rejected = res.results.filter(function (r) { return !r.eligible; });
     if (state.view === 'table') {
-      host.innerHTML = renderTable(eligible, rejected);
-    } else {
-      host.innerHTML = (eligible.length
-        ? eligible.map(renderCard).join('')
-        : '<p class="empty">Nothing qualifies on this date. That is the normal state of the screen ' +
-          'most days — the setups cluster.</p>') +
-        (state.showRejects ? renderRejects(rejected) : '');
-      attachCharts();
+      host.innerHTML = renderTable();
+      wireTableFilters();
+      return;
     }
+    var eligible = res.results.filter(function (r) { return r.eligible; });
+    var rejected = res.results.filter(function (r) { return !r.eligible && r.f; });
+    host.innerHTML = (eligible.length
+      ? eligible.map(function (r) { return renderCard(r); }).join('')
+      : '<p class="empty">Nothing qualifies on this date. That is the normal state of the screen ' +
+        'most days — the setups cluster.</p>') +
+      (state.showRejects ? renderRejects(rejected) : '');
+    attachCharts();
+    wireSymbolLinks();
+  }
+
+  function renderRejects(rejected) {
+    if (!rejected.length) return '';
+    var rows = rejected.map(function (r) {
+      var s = setupOf(r);
+      var why = r.capReason ? r.capReason
+        : (s && s.failing && s.failing.length) ? s.failing.map(function (c) { return c.label; }).join(' · ')
+        : (s && s.reason) || 'no qualifying setup';
+      return '<tr><td class="sym"><button class="symlink" data-symbol="' + esc(r.symbol) + '" type="button">' +
+        esc(r.symbol) + '</button></td>' +
+        '<td class="num">' + pctTxt(r.f.adr) + ' ADR · ' + QM.money(r.f.dollarVol20) + '</td>' +
+        '<td>' + esc(why) + '</td></tr>';
+    }).join('');
+    return '<section class="rejects"><h3>Rejected <span>' + rejected.length + '</span></h3>' +
+      '<table><thead><tr><th>Symbol</th><th>Liquidity</th><th>Failing criteria</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></section>';
   }
 
   function renderRegime(regime) {
@@ -140,26 +176,47 @@
     building: 'Building', extended: 'Extended · entry gone', fresh: 'Fresh gap', watch: 'Watch only · no crack yet'
   };
 
-  function renderCard(r) {
-    var s = r.best, p = s.plan, m = r.f;
+  function renderCard(r, opts) {
+    opts = opts || {};
+    var s = setupOf(r);
+    if (!s || !s.plan) {
+      return '<article class="card"><header class="card-head"><div class="id"><h3>' + esc(r.symbol) +
+        '</h3><span class="nm">' + esc(r.skipped || 'no qualifying setup to show') + '</span></div></header></article>';
+    }
+    var p = s.plan, m = r.f, q = r.quality;
     var side = p.side;
     var rank = r.rank || {};
     var planAdr = Math.abs(p.riskPct) / m.adr;
-    var chartId = 'c-' + r.symbol.replace(/[^A-Za-z0-9]/g, '');
+    var chartId = 'c-' + (opts.prefix || '') + r.symbol.replace(/[^A-Za-z0-9]/g, '');
+
     var metrics = [
       ['Price', '$' + f2(m.price)],
+      ['Mkt cap', capTxt(r.marketCap)],
       ['ADR', pctTxt(m.adr)],
       ['Turnover', QM.money(m.dollarVol20)],
-      ['1m', pctTxt(m.ret1m, 0)],
-      ['3m', pctTxt(m.ret3m, 0)],
-      ['6m', pctTxt(m.ret6m, 0)],
-      ['RS rank', isFinite(rank.best) ? 'top ' + Math.round(rank.best) + '%' : '—'],
+      ['1D', signed(m.ret1d, 1)],
+      ['5D', signed(m.ret5d, 1)],
+      ['1M', signed(m.ret1m, 0)],
+      ['3M', signed(m.ret3m, 0)],
+      ['6M', signed(m.ret6m, 0)],
+      ['RS', isFinite(rank.rsRating) ? String(rank.rsRating) : '—'],
       ['Off 52w high', pctTxt(m.pctOff52High)]
     ];
     var checks = s.checks.map(function (c) {
       return '<li class="' + (c.pass ? 'ok' : 'no') + '"><span class="mk">' + (c.pass ? '✓' : '✕') + '</span>' +
         '<span class="lb">' + esc(c.label) + '</span><span class="dt">' + esc(c.detail) + '</span></li>';
     }).join('');
+
+    var tt = q && q.trendTemplate ? q.trendTemplate : null;
+    var ttHtml = tt ? '<div class="trendtpl"><h4>Minervini trend template ' +
+      '<span class="ttscore ' + (tt.passed >= 7 ? 'good' : tt.passed >= 5 ? 'mid' : 'bad') + '">' +
+      tt.passed + '/' + tt.total + '</span></h4><ul class="ttlist">' +
+      tt.items.map(function (x) {
+        var cls = x.pass === null ? 'na' : x.pass ? 'ok' : 'no';
+        var mark = x.pass === null ? '–' : x.pass ? '✓' : '✕';
+        return '<li class="' + cls + '"><span class="mk">' + mark + '</span>' +
+          '<span class="lb">' + esc(x.label) + '</span><span class="dt">' + esc(x.detail) + '</span></li>';
+      }).join('') + '</ul></div>' : '';
 
     var planRows = [
       ['Entry trigger', '$' + f2(p.entry), 'accent'],
@@ -176,23 +233,33 @@
       f1(size.positionPct) + '% of equity · ' + QM.money(size.dollarsAtRisk) + ' at risk (' +
       f2(size.riskOfEquityPct) + '% of account)') : '';
 
-    return '<article class="card ' + s.type + ' ' + (s.status || '') + '">' +
+    var failing = (s.failing || []).map(function (c) { return c.label; });
+    if (r.capReason) failing.unshift(r.capReason);
+    var banner = r.eligible ? '' :
+      '<div class="reject-banner"><strong>Not eligible</strong> ' +
+      (failing.length ? esc(failing.join(' · ')) : esc(s.reason || 'no qualifying setup')) +
+      '<span class="hyp">The plan below is hypothetical — shown so you can see what the screen measured.</span></div>';
+
+    return '<article class="card ' + s.type + ' ' + (s.status || '') + (r.eligible ? '' : ' rejected') + '">' +
       '<header class="card-head">' +
         '<div class="id">' +
           '<h3>' + esc(r.symbol) + '</h3>' +
           '<span class="nm">' + esc(r.name || '') + (r.sector ? ' · ' + esc(r.sector) : '') + '</span>' +
         '</div>' +
         '<div class="tags">' +
+          (q ? '<span class="grade g' + q.grade.replace('+', 'plus') + '" title="setup quality">' +
+               esc(q.label) + '</span>' : '') +
           '<span class="badge ' + s.type + '">' + esc(SETUP_LABEL[s.type]) + '</span>' +
           '<span class="pill ' + (s.status || '') + '">' + esc(STATUS_TEXT[s.status] || s.status || '') + '</span>' +
           '<span class="score" title="composite setup score"><b>' + Math.round(s.score) + '</b><i>/100</i></span>' +
         '</div>' +
       '</header>' +
+      banner +
       '<div class="metrics">' + metrics.map(function (x) {
         return '<div class="m"><span class="k">' + esc(x[0]) + '</span><span class="v">' + esc(x[1]) + '</span></div>';
       }).join('') + '</div>' +
       '<div class="chart" id="' + chartId + '" data-symbol="' + esc(r.symbol) + '"></div>' +
-      '<div class="why"><h4>Why this one qualifies</h4><p>' + esc(r.justification) + '</p></div>' +
+      '<div class="why"><h4>Why this one qualifies</h4><p>' + esc(r.justification || '') + '</p></div>' +
       '<div class="plan-grid">' +
         '<div class="plan"><h4>' + (side === 'short' ? 'Short plan' : 'Trade plan') + '</h4>' +
           '<dl>' + planRows.map(function (x) {
@@ -204,63 +271,214 @@
           (p.intradayNote ? '<p class="rule">' + esc(p.intradayNote) + '</p>' : '') +
           '<p class="rule mgmt">' + esc(p.management) + '</p>' +
         '</div>' +
-        '<div class="criteria"><h4>Criteria</h4><ul class="checks">' + checks + '</ul></div>' +
+        '<div class="criteria"><h4>Criteria</h4><ul class="checks">' + checks + '</ul>' + ttHtml + '</div>' +
       '</div>' +
     '</article>';
   }
 
-  function renderRejects(rejected) {
-    if (!rejected.length) return '';
-    var rows = rejected.map(function (r) {
-      if (!r.f) return '<tr><td class="sym">' + esc(r.symbol) + '</td><td colspan="2">' + esc(r.skipped || 'no data') + '</td></tr>';
-      var best = null;
-      (r.setups || []).forEach(function (s) { if (!best || (s.score || 0) > (best.score || 0)) best = s; });
-      var why = best && best.failing && best.failing.length
-        ? best.failing.map(function (c) { return c.label; }).join(' · ')
-        : (best && best.reason) || 'no qualifying setup';
-      return '<tr><td class="sym">' + esc(r.symbol) + '</td>' +
-        '<td class="num">' + pctTxt(r.f.adr) + ' ADR · ' + QM.money(r.f.dollarVol20) + '</td>' +
-        '<td>' + esc(why) + '</td></tr>';
-    }).join('');
-    return '<section class="rejects"><h3>Rejected <span>' + rejected.length + '</span></h3>' +
-      '<table><thead><tr><th>Symbol</th><th>Liquidity</th><th>Failing criteria</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table></section>';
+  /* ---------------------------------------------------------- table view */
+
+  var STATUS_ORDER = ['triggered', 'triggered-lowvol', 'ready', 'fresh', 'watch', 'building', 'extended'];
+
+  function visibleRows() {
+    var res = state.lastRun;
+    if (!res) return [];
+    var f = state.filters;
+    return res.results.filter(function (r) {
+      if (!r.f) return false;
+      var s = setupOf(r);
+      if (!s) return false;
+      if (f.eligibility === 'eligible' && !r.eligible) return false;
+      if (f.eligibility === 'rejected' && r.eligible) return false;
+      if (f.setup && s.type !== f.setup) return false;
+      if (f.status && (s.status || '') !== f.status) return false;
+      var score = Math.round(s.score || 0);
+      if (score < f.minScore || score > f.maxScore) return false;
+      var rs = r.rank && isFinite(r.rank.rsRating) ? r.rank.rsRating : null;
+      if (rs === null) { if (f.minRs > 1 || f.maxRs < 99) return false; }
+      else if (rs < f.minRs || rs > f.maxRs) return false;
+      return true;
+    });
   }
 
-  function renderTable(eligible, rejected) {
-    var rows = eligible.map(function (r) {
-      var s = r.best, p = s.plan;
-      return '<tr><td class="sym">' + esc(r.symbol) + '</td>' +
-        '<td>' + esc(SETUP_LABEL[s.type]) + '</td>' +
-        '<td>' + esc(STATUS_TEXT[s.status] || s.status || '') + '</td>' +
+  function renderTable() {
+    var rows = visibleRows();
+    var f = state.filters;
+    var statuses = {};
+    (state.lastRun ? state.lastRun.results : []).forEach(function (r) {
+      var s = setupOf(r);
+      if (s && s.status) statuses[s.status] = true;
+    });
+    var statusOpts = STATUS_ORDER.filter(function (x) { return statuses[x]; });
+
+    var controls =
+      '<div class="tablefilters">' +
+        '<label class="ff"><span>Setup</span><select id="f-setup">' +
+          ['', 'breakout', 'ep', 'parabolic'].map(function (v) {
+            return '<option value="' + v + '"' + (f.setup === v ? ' selected' : '') + '>' +
+              (v ? SETUP_LABEL[v] : 'All') + '</option>';
+          }).join('') + '</select></label>' +
+        '<label class="ff"><span>Status</span><select id="f-status">' +
+          [''].concat(statusOpts).map(function (v) {
+            return '<option value="' + v + '"' + (f.status === v ? ' selected' : '') + '>' +
+              (v ? (STATUS_TEXT[v] || v) : 'All') + '</option>';
+          }).join('') + '</select></label>' +
+        '<label class="ff"><span>Eligibility</span><select id="f-elig">' +
+          [['all', 'All'], ['eligible', 'Eligible only'], ['rejected', 'Rejected only']].map(function (o) {
+            return '<option value="' + o[0] + '"' + (f.eligibility === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+          }).join('') + '</select></label>' +
+        slicer('score', 'Score', 0, 100, f.minScore, f.maxScore) +
+        slicer('rs', 'RS rating', 1, 99, f.minRs, f.maxRs) +
+        '<button class="go ghost" id="f-reset" type="button">Clear filters</button>' +
+        '<span class="fcount">' + rows.length + ' of ' +
+          (state.lastRun ? state.lastRun.results.filter(function (r) { return r.f; }).length : 0) + '</span>' +
+      '</div>';
+
+    var body = rows.map(function (r) {
+      var s = setupOf(r), p = s.plan, q = r.quality;
+      var rs = r.rank && isFinite(r.rank.rsRating) ? r.rank.rsRating : null;
+      return '<tr class="' + (r.eligible ? 'elig' : 'rej') + '">' +
+        '<td class="sym"><button class="symlink" data-symbol="' + esc(r.symbol) + '" type="button">' +
+          esc(r.symbol) + '</button></td>' +
+        '<td>' + esc(SETUP_LABEL[s.type] || '') + '</td>' +
+        '<td><span class="pill sm ' + (s.status || '') + '">' + esc(STATUS_TEXT[s.status] || s.status || '') + '</span></td>' +
+        '<td>' + (r.eligible ? '<span class="yes">eligible</span>' : '<span class="no">rejected</span>') + '</td>' +
+        '<td>' + (q ? '<span class="grade sm g' + q.grade.replace('+', 'plus') + '">' + esc(q.grade) + '</span>' : '—') + '</td>' +
         '<td class="num">' + Math.round(s.score) + '</td>' +
+        '<td class="num">' + (rs === null ? '—' : rs) + '</td>' +
+        '<td class="num">' + capTxt(r.marketCap) + '</td>' +
         '<td class="num">' + pctTxt(r.f.adr) + '</td>' +
-        '<td class="num">$' + f2(p.entry) + '</td>' +
-        '<td class="num">$' + f2(p.stop) + '</td>' +
-        '<td class="num">' + pctTxt(Math.abs(p.riskPct), 2) + '</td>' +
-        '<td class="num">' + f2(Math.abs(p.riskPct) / r.f.adr) + '×</td>' +
-        '<td class="num">' + (p.size ? p.size.shares.toLocaleString() : '—') + '</td></tr>';
+        '<td class="num">' + signed(r.f.ret1d, 1) + '</td>' +
+        '<td class="num">' + signed(r.f.ret5d, 1) + '</td>' +
+        '<td class="num">' + (p ? '$' + f2(p.entry) : '—') + '</td>' +
+        '<td class="num">' + (p ? '$' + f2(p.stop) : '—') + '</td>' +
+        '<td class="num">' + (p ? pctTxt(Math.abs(p.riskPct), 2) : '—') + '</td>' +
+        '<td class="num">' + (p ? f2(Math.abs(p.riskPct) / r.f.adr) + '×' : '—') + '</td>' +
+        '<td class="num">' + (p && p.size ? p.size.shares.toLocaleString() : '—') + '</td>' +
+      '</tr>';
     }).join('');
-    return '<div class="tbl-wrap"><table class="results"><caption>Eligible candidates — ' +
-      esc(state.asOf || '') + '</caption><thead><tr><th>Symbol</th><th>Setup</th><th>Status</th>' +
-      '<th class="num">Score</th><th class="num">ADR</th><th class="num">Entry</th><th class="num">Stop</th>' +
+
+    return controls + '<div class="tbl-wrap"><table class="results">' +
+      '<caption>Click a symbol for its chart, criteria and plan — rejected names included</caption>' +
+      '<thead><tr><th>Symbol</th><th>Setup</th><th>Status</th><th>Eligible</th><th>Grade</th>' +
+      '<th class="num">Score</th><th class="num">RS</th><th class="num">Mkt cap</th><th class="num">ADR</th>' +
+      '<th class="num">1D</th><th class="num">5D</th><th class="num">Entry</th><th class="num">Stop</th>' +
       '<th class="num">Risk</th><th class="num">ADR×</th><th class="num">Shares</th></tr></thead><tbody>' +
-      (rows || '<tr><td colspan="10">Nothing qualifies on this date.</td></tr>') +
-      '</tbody></table></div>' + (state.showRejects ? renderRejects(rejected) : '');
+      (body || '<tr><td colspan="16">Nothing matches these filters.</td></tr>') +
+      '</tbody></table></div>';
+  }
+
+  function slicer(id, label, lo, hi, minVal, maxVal) {
+    return '<div class="slicer"><span class="sl-label">' + esc(label) + '</span>' +
+      '<div class="sl-body">' +
+        '<input type="range" id="f-' + id + '-min" min="' + lo + '" max="' + hi + '" value="' + minVal + '" ' +
+          'aria-label="' + esc(label) + ' minimum">' +
+        '<input type="range" id="f-' + id + '-max" min="' + lo + '" max="' + hi + '" value="' + maxVal + '" ' +
+          'aria-label="' + esc(label) + ' maximum">' +
+      '</div>' +
+      '<span class="sl-val" id="f-' + id + '-val">' + minVal + '–' + maxVal + '</span></div>';
+  }
+
+  /* ------------------------------------------------------- detail overlay */
+
+  function openDetail(symbol) {
+    var res = state.lastRun;
+    if (!res) return;
+    var rec = res.results.filter(function (r) { return r.symbol === symbol; })[0];
+    if (!rec) return;
+    state.detail = symbol;
+    var host = $('#detail');
+    $('#detail-body').innerHTML = renderCard(rec, { prefix: 'd-' });
+    host.hidden = false;
+    document.body.classList.add('modal-open');
+    attachCharts($('#detail-body'), 'd-');
+    $('#detail-close').focus();
+  }
+
+  function closeDetail() {
+    state.detail = null;
+    $('#detail').hidden = true;
+    $('#detail-body').innerHTML = '';
+    document.body.classList.remove('modal-open');
+  }
+
+  /* ------------------------------------------------------- filter wiring */
+
+  function wireSymbolLinks(root) {
+    $$('.symlink', root || $('#results')).forEach(function (btn) {
+      btn.addEventListener('click', function () { openDetail(btn.getAttribute('data-symbol')); });
+    });
+  }
+
+  /* Filter changes repaint only the rows, so the slider you are dragging is
+   * never torn out from under you. */
+  function refreshTableBody() {
+    var host = $('#results table.results tbody');
+    if (!host) { render(); return; }
+    var html = renderTable();
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    host.innerHTML = tmp.querySelector('table.results tbody').innerHTML;
+    var count = tmp.querySelector('.fcount');
+    if (count && $('.fcount')) $('.fcount').textContent = count.textContent;
+    wireSymbolLinks();
+  }
+
+  function bindSlicer(id, minKey, maxKey) {
+    var lo = $('#f-' + id + '-min'), hi = $('#f-' + id + '-max'), out = $('#f-' + id + '-val');
+    if (!lo || !hi) return;
+    function sync(commit) {
+      var a = +lo.value, b = +hi.value;
+      if (a > b) {                       // handles crossed: push the other one
+        if (document.activeElement === lo) { b = a; hi.value = b; }
+        else { a = b; lo.value = a; }
+      }
+      out.textContent = a + '–' + b;
+      state.filters[minKey] = a;
+      state.filters[maxKey] = b;
+      if (commit) refreshTableBody();
+    }
+    lo.addEventListener('input', function () { sync(false); });
+    hi.addEventListener('input', function () { sync(false); });
+    lo.addEventListener('change', function () { sync(true); });
+    hi.addEventListener('change', function () { sync(true); });
+  }
+
+  function wireTableFilters() {
+    wireSymbolLinks();
+    var pairs = [['#f-setup', 'setup'], ['#f-status', 'status'], ['#f-elig', 'eligibility']];
+    pairs.forEach(function (pair) {
+      var el = $(pair[0]);
+      if (!el) return;
+      el.addEventListener('change', function () {
+        state.filters[pair[1]] = this.value;
+        refreshTableBody();
+      });
+    });
+    bindSlicer('score', 'minScore', 'maxScore');
+    bindSlicer('rs', 'minRs', 'maxRs');
+    var reset = $('#f-reset');
+    if (reset) reset.addEventListener('click', function () {
+      state.filters = { setup: '', status: '', eligibility: 'all',
+                        minScore: 0, maxScore: 100, minRs: 1, maxRs: 99 };
+      render();
+    });
   }
 
   /* --------------------------------------------------------------- charts */
-  function attachCharts() {
+  function attachCharts(root, prefix) {
     var res = state.lastRun;
     if (!res) return;
-    $$('#results .chart').forEach(function (host) {
+    $$('.chart', root || $('#results')).forEach(function (host) {
       var sym = host.getAttribute('data-symbol');
       var rec = res.results.filter(function (r) { return r.symbol === sym; })[0];
       if (!rec || !rec.f) return;
       var bars = rec.f.bars, n = bars.length;
       var closes = bars.map(function (b) { return b.close; });
       var from = Math.max(0, n - 120), to = n - 1;
-      var s = rec.best, p = s.plan;
+      var s = setupOf(rec);
+      if (!s || !s.plan) return;
+      var p = s.plan;
       var base = s.base;
       var idxOf = function (d) { for (var i = 0; i < n; i++) if (bars[i].date === d) return i; return -1; };
       host.innerHTML = QMChart.renderChart({
@@ -273,7 +491,7 @@
         } : null,
         pivot: s.type === 'breakout' ? s.pivot : null,
         entry: p.entry, stop: p.stop, markers: [],
-        width: 900, priceH: 210, volH: 46, id: 'svg-' + sym
+        width: 900, priceH: 210, volH: 46, id: 'svg-' + (prefix || '') + sym
       });
       host.insertAdjacentHTML('beforeend',
         '<div class="legend">' +
@@ -506,7 +724,7 @@
     $('#show-rejects').addEventListener('change', function () { state.showRejects = this.checked; render(); });
 
     [['equity', 'accountEquity'], ['risk', 'riskPctPerTrade'], ['maxpos', 'maxPositionPct'],
-     ['minadr', 'minAdr'], ['minprice', 'minPrice']].forEach(function (pair) {
+     ['minadr', 'minAdr'], ['minprice', 'minPrice'], ['mcaptop', 'marketCapTopPct']].forEach(function (pair) {
       var el = $('#' + pair[0]);
       el.value = state.settings[pair[1]];
       el.addEventListener('change', function () {
@@ -532,13 +750,21 @@
     $('#reset').addEventListener('click', function () {
       state.settings = {
         accountEquity: 100000, riskPctPerTrade: 0.5, maxPositionPct: 20,
-        minPrice: 5, minAdr: 3.5, minDollarVol: 5e6,
+        minPrice: 5, minAdr: 3.5, minDollarVol: 5e6, marketCapTopPct: 100,
         setups: { breakout: true, ep: true, parabolic: true }
       };
       LS.set('settings', state.settings);
       wireValues();
       run();
     });
+    $('#detail-close').addEventListener('click', closeDetail);
+    $('#detail').addEventListener('click', function (ev) {
+      if (ev.target === this) closeDetail();          // click the backdrop to dismiss
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && state.detail) closeDetail();
+    });
+
     $('#provider').value = LS.get('provider', 'fmp');
     $('#apikey').value = LS.get('apikey', '');
     $('#symbols').value = LS.get('symbols', 'NVDA AMD MU AVGO SMCI CRWD PLTR SPY');
@@ -550,6 +776,7 @@
     $('#maxpos').value = state.settings.maxPositionPct;
     $('#minadr').value = state.settings.minAdr;
     $('#minprice').value = state.settings.minPrice;
+    $('#mcaptop').value = state.settings.marketCapTopPct;
     $('#mindv').value = state.settings.minDollarVol / 1e6;
     ['breakout', 'ep', 'parabolic'].forEach(function (k) { $('#setup-' + k).checked = state.settings.setups[k]; });
   }

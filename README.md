@@ -8,6 +8,7 @@ A written strategy analysis and a working screener for Kristjan Kullamägi's
 |---|---|
 | **[docs/executive-summary.html](docs/executive-summary.html)** | The full analysis — screening criteria, entry mechanics, stop-loss logic, profit-taking rules, position sizing, market-regime gating, and five annotated case studies from the June–August 2026 window (3 winners, 2 losers). Open it in a browser; the charts are inline SVG. |
 | **[docs/executive-summary.md](docs/executive-summary.md)** | The same document as plain text. |
+| **[docs/scoring.md](docs/scoring.md)** | How the setup score, the A+/A/B/C quality grade, the Minervini trend template and the RS rating are calculated, component by component, with the eligibility gates. |
 | **[app/index.html](app/index.html)** | The screener. Open it in a browser — no build step, no server required (a local server is only needed for the live-API tab). |
 
 ## The strategy in one table
@@ -81,6 +82,7 @@ app/
   datasets.js         generated: the bundled demo universe
 docs/
   executive-summary.html / .md    generated: the written analysis
+  scoring.md          how every score, grade and gate is computed
 data/
   DATA.md             provenance and how to load real bars
   vti-constituents.csv  snapshot of the resolved VTI universe (3,500 symbols)

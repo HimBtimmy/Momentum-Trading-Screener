@@ -267,6 +267,84 @@ td.num, th.num { font-family: var(--font-mono); font-variant-numeric: tabular-nu
 .rejects h3 span { font: 500 11px var(--font-mono); color: var(--ink-muted); }
 .empty { padding: 26px 0; color: var(--ink-muted); font-size: 15px; }
 
+/* ---- quality grade, trend template, reject banner ---------------------- */
+.grade {
+  font: 600 9.5px/1 var(--font-mono); letter-spacing: .09em; text-transform: uppercase;
+  padding: 6px 8px; border-radius: 2px; border: 1px solid;
+}
+.grade.gAplus { color: var(--status-good); border-color: var(--status-good); background: color-mix(in srgb, var(--status-good) 10%, transparent); }
+.grade.gA { color: var(--qm-ma10); border-color: var(--qm-ma10); background: color-mix(in srgb, var(--qm-ma10) 10%, transparent); }
+.grade.gB { color: var(--ink-secondary); border-color: var(--rule); background: var(--surface-2); }
+.grade.gC { color: var(--status-serious); border-color: var(--status-serious); background: color-mix(in srgb, var(--status-serious) 10%, transparent); }
+.grade.sm { padding: 3px 5px; letter-spacing: .04em; }
+.reject-banner {
+  padding: 10px 18px; background: color-mix(in srgb, var(--status-critical) 8%, var(--surface));
+  border-block: 1px solid var(--rule-faint); font-size: 13.5px; color: var(--ink-secondary);
+}
+.reject-banner strong { color: var(--status-critical); margin-right: 6px; }
+.reject-banner .hyp { display: block; margin-top: 4px; color: var(--ink-muted); font-size: 12.5px; }
+.trendtpl { margin-top: 20px; }
+.trendtpl h4 { display: flex; align-items: center; gap: 8px; }
+.ttscore { font: 600 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 2px; }
+.ttscore.good { color: var(--status-good); background: color-mix(in srgb, var(--status-good) 12%, transparent); }
+.ttscore.mid { color: var(--status-serious); background: color-mix(in srgb, var(--status-serious) 12%, transparent); }
+.ttscore.bad { color: var(--status-critical); background: color-mix(in srgb, var(--status-critical) 12%, transparent); }
+ul.ttlist { list-style: none; margin: 0; padding: 0; }
+ul.ttlist li {
+  display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 1px 7px;
+  padding: 5px 0; border-bottom: 1px solid var(--rule-faint); font-size: 13px;
+}
+ul.ttlist .mk { font: 600 12px/1.5 var(--font-mono); }
+ul.ttlist li.ok .mk { color: var(--status-good); }
+ul.ttlist li.no .mk { color: var(--status-critical); }
+ul.ttlist li.na .mk { color: var(--ink-muted); }
+ul.ttlist li.na .lb { color: var(--ink-muted); }
+ul.ttlist .lb { color: var(--ink-primary); }
+ul.ttlist .dt { grid-column: 2; font: 400 11.5px/1.4 var(--font-mono); color: var(--ink-muted); }
+.card.rejected { border-left-color: var(--status-critical); opacity: 1; }
+
+/* ---- table filters and slicers ---------------------------------------- */
+.tablefilters {
+  display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: flex-end; margin-bottom: 14px;
+  padding: 14px 16px; background: var(--surface); border: 1px solid var(--rule); border-radius: 3px;
+}
+label.ff { display: flex; flex-direction: column; gap: 5px; }
+label.ff > span, .sl-label {
+  font: 500 9.5px/1 var(--font-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--ink-muted);
+}
+.slicer { display: flex; flex-direction: column; gap: 4px; min-width: 168px; }
+.sl-body { display: grid; gap: 2px; }
+.sl-body input[type="range"] { width: 100%; accent-color: var(--accent); height: 18px; margin: 0; }
+.sl-val { font: 600 12px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-primary); }
+.fcount { margin-left: auto; font: 500 11px/1 var(--font-mono); color: var(--ink-muted); }
+button.symlink {
+  appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+  font: 600 13.5px var(--font-mono); color: var(--accent); text-decoration: underline;
+  text-underline-offset: .18em;
+}
+button.symlink:hover { color: var(--ink-primary); }
+.pill.sm { font-size: 9px; padding: 4px 5px; }
+table.results td .yes { color: var(--status-good); font-weight: 600; font-size: 12.5px; }
+table.results td .no { color: var(--ink-muted); font-size: 12.5px; }
+table.results tr.rej td { opacity: .78; }
+
+/* ---- detail overlay ---------------------------------------------------- */
+body.modal-open { overflow: hidden; }
+.overlay[hidden] { display: none; }   /* display:flex below would otherwise beat [hidden] */
+.overlay {
+  position: fixed; inset: 0; z-index: 100; background: color-mix(in srgb, var(--ink-primary) 55%, transparent);
+  display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; overflow-y: auto;
+}
+.overlay-panel { width: min(1100px, 100%); position: relative; }
+.overlay-close {
+  position: sticky; top: 0; float: right; z-index: 2;
+  appearance: none; border: 1px solid var(--rule); background: var(--surface); color: var(--ink-primary);
+  font: 600 10.5px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase;
+  padding: 9px 12px; border-radius: 2px; cursor: pointer; margin-bottom: 8px;
+}
+.overlay-close:hover { background: var(--ink-primary); color: var(--paper); }
+.overlay .card { margin-bottom: 0; }
+
 /* ---- chart tooltip ----------------------------------------------------- */
 .qm-tip {
   position: absolute; z-index: 50; pointer-events: none;
@@ -374,6 +452,8 @@ NVDA,2026-09-11,178.40,182.10,177.90,181.55,184320000"></textarea>
       <label class="field"><span>Min ADR %</span><input type="number" id="minadr" min="0" max="20" step="0.25"></label>
       <label class="field"><span>Min turnover $M</span><input type="number" id="mindv" min="0" step="0.5"></label>
       <label class="field"><span>Min price $</span><input type="number" id="minprice" min="0" step="1"></label>
+      <label class="field"><span>Market cap: top %</span><input type="number" id="mcaptop" min="1" max="100" step="1"
+        title="keep only names in the largest X% of the screened universe by market cap; 100 keeps all"></label>
       <button class="go ghost" id="reset" type="button">Reset to his defaults</button>
     </div>
     <div class="checks-row">
@@ -396,6 +476,13 @@ NVDA,2026-09-11,178.40,182.10,177.90,181.55,184320000"></textarea>
 </div>
 
 <div id="results"></div>
+
+<div id="detail" class="overlay" hidden role="dialog" aria-modal="true" aria-label="Symbol detail">
+  <div class="overlay-panel">
+    <button id="detail-close" class="overlay-close" type="button" aria-label="Close">Close ✕</button>
+    <div id="detail-body"></div>
+  </div>
+</div>
 
 <footer class="foot">
   <p>Screening logic implements rules published by Kristjan Kullamägi (qullamaggie.com): ADR-capped stops,

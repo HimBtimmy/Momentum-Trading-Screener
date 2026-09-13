@@ -572,17 +572,31 @@ def screen_filters(
     return None
 
 
-def write_csv(path: Path, rows: Iterable[Bar]) -> int:
+def write_csv(path: Path, rows: Iterable[Bar], meta: dict[str, Holding] | None = None) -> int:
+    """Write the long-format CSV the screener imports.
+
+    Market cap and company name are written once per symbol, on its first row,
+    and left blank on the rest: the screener reads them as per-symbol metadata,
+    and repeating them on every bar would add megabytes for nothing.
+    """
+    meta = meta or {}
     path.parent.mkdir(parents=True, exist_ok=True)
     written = 0
+    seen: set[str] = set()
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["symbol", "date", "open", "high", "low", "close", "volume"])
+        writer.writerow(["symbol", "date", "open", "high", "low", "close", "volume",
+                         "market_cap", "name"])
         for bar in rows:
+            first = bar.symbol not in seen
+            holding = meta.get(bar.symbol) if first else None
+            seen.add(bar.symbol)
             writer.writerow([
                 bar.symbol, bar.date,
                 f"{bar.open:.4f}", f"{bar.high:.4f}", f"{bar.low:.4f}", f"{bar.close:.4f}",
                 int(round(bar.volume)),
+                f"{holding.market_cap:.0f}" if holding and holding.market_cap else "",
+                holding.name if holding and holding.name != bar.symbol else "",
             ])
             written += 1
     return written
@@ -861,7 +875,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     rows.sort(key=lambda b: (b.symbol, b.date))
-    written = write_csv(args.out, rows)
+    written = write_csv(args.out, rows, {h.ticker: h for h in holdings})
     size_mb = args.out.stat().st_size / 1e6
     dates = (rows[0].date, rows[-1].date)
     span = sorted({b.date for b in rows})

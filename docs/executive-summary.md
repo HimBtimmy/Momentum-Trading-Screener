@@ -171,22 +171,22 @@ The June–August 2026 tape is a useful illustration. June was a down month for 
 
 Three winners and two losers, each evaluated **only on the information available on the trigger date** and then managed forward by the rules above — sell half after 3–5 sessions, stop to breakeven, trail the 10- or 20-day MA, exit on the first close below. Every number in the captions and tables is computed by the engine in this repository, not asserted: the entry is the screener's entry, the stop is the screener's stop, and the R-multiples come from replaying the management rules bar by bar.
 
-### MEMQ — Breakout (continuation flag) · WINNER +12.07R
+### MEMQ — Breakout (continuation flag) · WINNER +12.00R
 
-*Memory / storage momentum leader (archetype). Trigger 2026-07-02. ADR 5.7%. Entry 52.92 · stop 51.31 · risk 3.05% (0.54× ADR) · max favourable excursion 27.3R.*
+*Memory / storage momentum leader (archetype). Trigger 2026-07-02. ADR 5.7%. Entry 52.92 · stop 51.30 · risk 3.07% (0.54× ADR) · max favourable excursion 27.1R.*
 
 The dominant theme of 2026 was the memory shortage — DRAM/NAND names led every momentum list in the real tape. June 2026 was a down month for tech (Nasdaq −2.8%), which is exactly what turns a vertical leg into a tradeable flag: the leader stops going up but refuses to break, while the index does the correcting for it.
 
-**Why it was flagged.** MEMQ trades at $54.56 with a 5.7% ADR (leader-grade) and $90M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. It is up 9.5% over one month, 115.4% over three and 162.6% over six, and it sits 2% off its 52-week high. The pattern is the textbook continuation setup: a 112.9% advance over 41 sessions beginning 2026-03-23, followed by 29 sessions of orderly consolidation since 2026-05-20. That base is only 11.9% deep against the 24.6% its ADR would allow, lows are rising (+0.3% back-half vs front-half), the daily range has contracted to 0.64x what it was at the start of the base, and volume has dried up to 0.46x the volume of the advance. Price spent 100% of the base above a rising 50-day MA while hugging the 20-day EMA - the "surfing" behaviour that marks institutional accumulation rather than distribution. It cleared the 52.87 pivot on 2026-07-02 on 7x average volume with a 1.6x range expansion, which is the trigger.
+**Why it was flagged.** MEMQ trades at $54.56 with a 5.7% ADR (leader-grade) and $90M of average daily turnover, so it is volatile enough to pay multiples of risk in days. It is up 9.5% over one month, 115.4% over three and 162.6% over six, and it sits 2% off its 52-week high. This is the textbook version of the setup: a 112.9% advance over 41 sessions beginning 2026-03-23, then 29 sessions of consolidation since 2026-05-20. The base is 11.9% deep against the 24.6% its ADR would allow, lows are rising (+0.3% back-half vs front-half), the daily range has moved to 0.64x what it was at the start of the base, and volume has run at 0.46x the volume of the advance. Price spent 100% of the base above the 50-day MA while hugging the 20-day EMA. It cleared the 52.87 pivot on 2026-07-02 on 7x average volume with a 1.6x range expansion, which is the trigger. In its favour: it passes all 7 of the Minervini trend-template tests that can be measured here; ADR is leader-grade at 5.7%; it is within 2% of its 52-week high, so there is little trapped supply overhead; the base has the full signature — rising lows, a 0.64x range contraction and volume down to 0.46x the advance; and risk is only 0.54x ADR, so one average day of follow-through pays roughly 1.9R. Caveats — relative strength could not be ranked — this symbol was screened on its own rather than against a universe, so the RS test is unscored.
 
-**The plan.** Entry: Buy-stop on a break of the 1-min / 5-min / 60-min opening-range high once price clears 52.87. Reference level $52.92. Stop: $51.31 - Hard stop at the low of the breakout day (2026-07-02, 51.31). That is 3% of price, 0.54x ADR. Targets: 3R at $57.76, 5R at $60.99; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 310 shares ($16.4K, 16.4% of equity) risks $499.99 = 0.5% of the account.
+**The plan.** Entry: Buy-stop on a break of the 1-min / 5-min / 60-min opening-range high once price clears 52.87. Reference level $52.92. Stop: $51.3 - Hard stop at the low of the breakout day (2026-07-02, 51.31). That is 3.1% of price, 0.54x ADR. Targets: 3R at $57.79, 5R at $61.04; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 308 shares ($16.3K, 16.3% of equity) risks $499.84 = 0.5% of the account.
 
 **Fills.**
 
 | Date | Size | Price | R | Why |
 |---|---|---|---|---|
-| 2026-07-09 | 50% | 59.82 | +4.28R | sold 50% into strength after 4 sessions |
-| 2026-08-19 | 50% | 84.97 | +19.87R | first close below the 10-day MA |
+| 2026-07-09 | 50% | 59.82 | +4.25R | sold 50% into strength after 4 sessions |
+| 2026-08-19 | 50% | 84.97 | +19.75R | first close below the 10-day MA |
 
 **Lesson.** The A+ version of the setup: a real leg, six weeks of orderly digestion on drying volume while the index corrected, then a range expansion out of a tight pivot area. Because the stock coiled right underneath its pivot, the entry-day low sat barely half an ADR below the trigger — which is the only reason a move of this size converts into double-digit R rather than low single digits.
 
@@ -194,22 +194,22 @@ The dominant theme of 2026 was the memory shortage — DRAM/NAND names led every
 
 ---
 
-### NRGX — Episodic pivot (contract + guidance gap) · WINNER +8.76R
+### NRGX — Episodic pivot (contract + guidance gap) · WINNER +8.54R
 
-*Oilfield-services re-rating (archetype). Trigger 2026-07-22. ADR 4.5%. Entry 15.68 · stop 15.28 · risk 2.52% (0.56× ADR) · max favourable excursion 14.4R.*
+*Oilfield-services re-rating (archetype). Trigger 2026-07-22. ADR 4.5%. Entry 15.68 · stop 15.27 · risk 2.59% (0.58× ADR) · max favourable excursion 14.0R.*
 
 July 2026 was a rotation month: the S&P was roughly flat while leadership moved out of mega-cap tech into energy, financials and materials. Energy-services names were the real-tape example of this — one of them was up over 400% on a one-year view by August. EPs cluster in earnings season, and this one lands in the last week of July.
 
-**Why it was flagged.** NRGX trades at $16.41 with a 4.5% ADR (workable) and $35.7M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. This is an episodic pivot, not a chart pattern: NRGX gapped 19% on 2026-07-22 on 7x its average volume, after spending the prior 90 sessions in a 35.3% range. Dormancy is the feature, not a bug - the best EPs come out of stocks nobody was watching, because the gap forces a repricing that institutions then have to chase for weeks. It closed in the top 16% of the gap day's range, so buyers held the gap into the bell rather than selling it. It is up 40.7% over one month, 56.6% over three and 72.4% over six, and it sits 1.3% off its 52-week high. Levels come from the opening range of 2026-07-22 (ORH 15.66 / ORL 15.28); the full day spans 1.8 ADRs, which is why the opening range, not the day, defines the risk.
+**Why it was flagged.** NRGX trades at $16.41 with a 4.5% ADR (modest) and $35.7M of average daily turnover, so it is liquid enough to trade cleanly, though its daily range is on the slow side for this strategy. It is up 40.7% over one month, 56.6% over three and 72.4% over six, and it sits 1.3% off its 52-week high. A high-quality setup, and an episodic pivot rather than a chart pattern: NRGX gapped 19% on 2026-07-22 on 7x its average volume, after spending the prior 90 sessions in a 35.3% range. It closed in the top 16% of the gap day's range. Levels come from the opening range of 2026-07-22 (ORH 15.66 / ORL 15.28); the full day spans 1.8 ADRs, which is why the opening range, not the day, defines the risk. In its favour: it passes all 7 of the Minervini trend-template tests that can be measured here; it is within 1.3% of its 52-week high, so there is little trapped supply overhead; the gap came on 7x normal volume; and risk is only 0.58x ADR, so one average day of follow-through pays roughly 1.7R. Caveats — relative strength could not be ranked — this symbol was screened on its own rather than against a universe, so the RS test is unscored; and ADR of 4.5% is below the 5-6% he looks for, so the same number of R takes proportionally longer to arrive and the trade ties up capital for more time.
 
-**The plan.** Entry: Buy-stop on a break of the opening-range high (1-min, then add on the 5-min ORH) once price clears 15.66. Reference level $15.68. Stop: $15.28 - Hard stop at the low of the entry day (structural low 15.28). That is 2.5% of price, 0.56x ADR. Targets: 3R at $16.86, 5R at $17.65; then trail the balance on the 20-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 20-day moving average and exit on the first close below it. Size: 1,263 shares ($19.8K, 19.8% of equity) risks $499.72 = 0.5% of the account.
+**The plan.** Entry: Buy-stop on a break of the opening-range high (1-min, then add on the 5-min ORH) once price clears 15.66. Reference level $15.68. Stop: $15.27 - Hard stop one tick under the low of the entry day (15.28 low, stop 15.27). That is 2.6% of price, 0.58x ADR. Targets: 3R at $16.89, 5R at $17.7; then trail the balance on the 20-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 20-day moving average and exit on the first close below it. Size: 1,232 shares ($19.3K, 19.3% of equity) risks $499.77 = 0.5% of the account.
 
 **Fills.**
 
 | Date | Size | Price | R | Why |
 |---|---|---|---|---|
-| 2026-07-28 | 50% | 17.54 | +4.71R | sold 50% into strength after 4 sessions |
-| 2026-09-11 | 50% | 20.74 | +12.80R | still open at the end of the window |
+| 2026-07-28 | 50% | 17.54 | +4.60R | sold 50% into strength after 4 sessions |
+| 2026-09-11 | 50% | 20.74 | +12.48R | still open at the end of the window |
 
 **Lesson.** Dormancy is the feature. Four and a half months of chopping inside a wide, directionless range means nobody is positioned and there is no trapped supply immediately overhead, so a 19% gap on 7x volume forces a repricing that institutions then spend weeks chasing. Note where the risk came from: the gap day itself spanned several ADRs, so a full-day stop would have been unusable — it was the opening-range low that made the risk half an ADR.
 
@@ -217,22 +217,22 @@ July 2026 was a rotation month: the S&P was roughly flat while leadership moved 
 
 ---
 
-### ADVX — Parabolic short · WINNER +5.28R
+### ADVX — Parabolic short · WINNER +5.26R
 
-*Specialty semiconductor substrates (archetype). Trigger 2026-08-10. ADR 8.8%. Entry 65.30 · stop 68.24 · risk 4.49% (0.51× ADR) · max favourable excursion 6.7R.*
+*Specialty semiconductor substrates (archetype). Trigger 2026-08-10. ADR 8.8%. Entry 65.30 · stop 68.25 · risk 4.51% (0.51× ADR) · max favourable excursion 6.7R.*
 
 Small-cap AI-adjacent names went vertical through late July 2026 on the back of the memory/AI capex theme. On 10 August the real tape handed the short side its catalyst: the S&P posted back-to-back losses on a tech sell-off, and the most extended names broke first.
 
-**Why it was flagged.** ADVX trades at $59.37 with a 8.8% ADR (very high) and $233.2M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. ADVX has gone parabolic: 97.8% at its fastest over the last 5-20 sessions, 10 consecutive up closes, RSI(14) at 96, and price stretched 4 ADRs above its 20-day EMA. Moves like this end in a vacuum, not a rounded top. The first crack has appeared - it closed red and closed in the bottom third of its range - which is the only condition under which this setup is tradeable. Never short day one or two of a parabolic move. First cover zone is the 10-day EMA at 49.95 and the 20-day EMA at 43.76 (26.3% below here).
+**Why it was flagged.** ADVX trades at $59.37 with a 8.8% ADR (very high) and $233.2M of average daily turnover, so it is volatile enough to pay multiples of risk in days. It is up 80% over one month, 123.7% over three and 152.9% over six, and it sits 13% off its 52-week high. A high-quality setup on the short side: ADVX is up 97.8% at its fastest over the last 5-20 sessions, 10 consecutive up closes, RSI(14) at 96, and price stretched 4 ADRs above its 20-day EMA. The first crack has appeared — it closed red and closed in the bottom third of its range — which is the only condition under which this setup is tradeable. First cover zone is the 10-day EMA at 49.95 and the 20-day EMA at 43.76 (26.3% below here). In its favour: it passes all 7 of the Minervini trend-template tests that can be measured here; ADR is leader-grade at 8.8%; and risk is only 0.51x ADR, so one average day of follow-through pays roughly 1.9R. Caveats — relative strength could not be ranked — this symbol was screened on its own rather than against a universe, so the RS test is unscored.
 
-**The plan.** Entry: Failed reclaim of VWAP on 2026-08-10 (reference 65.37), which is his preferred trigger; the alternatives are the 1- or 5-min opening-range low and the first red 5-min candle after a gap up. Never on day one of the move. Reference level $65.3. Stop: $68.24 - Hard stop at the high of 2026-08-10 (68.24). That is 4.5% of price, 0.51x ADR. Targets: the 10-day EMA at $49.95 and the 20-day EMA at $43.76 (3R at $56.5). Management: Cover into the 10- and 20-day moving averages, taking the first tranche once the stock is down 2-3 ADRs from entry. These are day-to-three-day trades, not positions to marry. Size: 170 shares ($11.1K, 11.1% of equity) risks $499.01 = 0.5% of the account.
+**The plan.** Entry: Failed reclaim of VWAP on 2026-08-10 (reference 65.37), which is his preferred trigger; the alternatives are the 1- or 5-min opening-range low and the first red 5-min candle after a gap up. Never on day one of the move. Reference level $65.3. Stop: $68.25 - Hard stop at the high of 2026-08-10 (68.24). That is 4.5% of price, 0.51x ADR. Targets: the 10-day EMA at $49.95 and the 20-day EMA at $43.76 (3R at $56.47). Management: Cover into the 10- and 20-day moving averages, taking the first tranche once the stock is down 2-3 ADRs from entry. These are day-to-three-day trades, not positions to marry. Size: 169 shares ($11K, 11% of equity) risks $497.77 = 0.5% of the account.
 
 **Fills.**
 
 | Date | Size | Price | R | Why |
 |---|---|---|---|---|
-| 2026-08-13 | 50% | 52.31 | +4.43R | covered into the 10-day MA |
-| 2026-08-18 | 50% | 47.29 | +6.14R | covered the balance into the 20-day MA |
+| 2026-08-13 | 50% | 52.31 | +4.41R | covered into the 10-day MA |
+| 2026-08-18 | 50% | 47.29 | +6.12R | covered the balance into the 20-day MA |
 
 **Lesson.** The discipline is in the waiting. A vertical run, a string of up closes and an RSI in the nineties is not a short — it is a watch-list entry, and the screener says so explicitly until the first crack appears. The trade only existed once the stock failed back through VWAP, which is what put the stop at that session's high, inside half an ADR. Shorting the same stock two days earlier, with the stop several ADRs away, is the same idea with no edge.
 
@@ -240,21 +240,21 @@ Small-cap AI-adjacent names went vertical through late July 2026 on the back of 
 
 ---
 
-### HLTQ — Breakout (continuation flag) · LOSER -1.52R
+### HLTQ — Breakout (continuation flag) · LOSER -1.51R
 
-*Health-care rotation winner (archetype). Trigger 2026-07-23. ADR 5.0%. Entry 93.26 · stop 91.46 · risk 1.93% (0.39× ADR) · max favourable excursion 0.0R.*
+*Health-care rotation winner (archetype). Trigger 2026-07-23. ADR 5.0%. Entry 93.26 · stop 91.45 · risk 1.94% (0.39× ADR) · max favourable excursion 0.0R.*
 
 Health care was one of the June 2026 leadership groups as money left tech. This name did everything right on the chart and then broke out on 23 July — one session before the 24 July tape, when capex fears knocked the Nasdaq and the Russell 2000 lower and every fresh breakout in the market got sold.
 
-**Why it was flagged.** HLTQ trades at $95.79 with a 5% ADR (leader-grade) and $79.3M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. It is up 9.8% over one month, 72.3% over three and 103.5% over six, and it sits 1.5% off its 52-week high. The pattern is the textbook continuation setup: a 75.5% advance over 59 sessions beginning 2026-04-02, followed by 17 sessions of orderly consolidation since 2026-06-29. That base is only 10.4% deep against the 16.6% its ADR would allow, lows are rising (+1.9% back-half vs front-half), the daily range has contracted to 0.74x what it was at the start of the base, and volume has dried up to 0.4x the volume of the advance. Price spent 100% of the base above a rising 50-day MA while hugging the 20-day EMA - the "surfing" behaviour that marks institutional accumulation rather than distribution. It cleared the 93.17 pivot on 2026-07-23 on 3x average volume with a 1.6x range expansion, which is the trigger.
+**Why it was flagged.** HLTQ trades at $95.79 with a 5% ADR (leader-grade) and $79.3M of average daily turnover, so it is volatile enough to pay multiples of risk in days. It is up 9.8% over one month, 72.3% over three and 103.5% over six, and it sits 1.5% off its 52-week high. This is the textbook version of the setup: a 75.5% advance over 59 sessions beginning 2026-04-02, then 17 sessions of consolidation since 2026-06-29. The base is 10.4% deep against the 16.6% its ADR would allow, lows are rising (+1.9% back-half vs front-half), the daily range has moved to 0.74x what it was at the start of the base, and volume has run at 0.4x the volume of the advance. Price spent 100% of the base above the 50-day MA while hugging the 20-day EMA. It cleared the 93.17 pivot on 2026-07-23 on 3x average volume with a 1.6x range expansion, which is the trigger. In its favour: it passes all 7 of the Minervini trend-template tests that can be measured here; ADR is leader-grade at 5%; it is within 1.5% of its 52-week high, so there is little trapped supply overhead; the base has the full signature — rising lows, a 0.74x range contraction and volume down to 0.4x the advance; and risk is only 0.39x ADR, so one average day of follow-through pays roughly 2.6R. Caveats — relative strength could not be ranked — this symbol was screened on its own rather than against a universe, so the RS test is unscored.
 
-**The plan.** Entry: Buy-stop on a break of the 1-min / 5-min / 60-min opening-range high once price clears 93.17. Reference level $93.26. Stop: $91.46 - Hard stop at the low of the breakout day (2026-07-23, 91.46). That is 1.9% of price, 0.39x ADR. Targets: 3R at $98.67, 5R at $102.28; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 214 shares ($20K, 20% of equity) risks $385.88 = 0.39% of the account; size capped by the 20% max-position rule, so realised risk is below 0.5%.
+**The plan.** Entry: Buy-stop on a break of the 1-min / 5-min / 60-min opening-range high once price clears 93.17. Reference level $93.26. Stop: $91.45 - Hard stop at the low of the breakout day (2026-07-23, 91.46). That is 1.9% of price, 0.39x ADR. Targets: 3R at $98.7, 5R at $102.33; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 214 shares ($20K, 20% of equity) risks $388.02 = 0.39% of the account; size capped by the 20% max-position rule, so realised risk is below 0.5%.
 
 **Fills.**
 
 | Date | Size | Price | R | Why |
 |---|---|---|---|---|
-| 2026-07-24 | 100% | 90.52 | -1.52R | initial stop hit — gapped through, filled at the open |
+| 2026-07-24 | 100% | 90.52 | -1.51R | initial stop hit — gapped through, filled at the open |
 
 **Lesson.** A textbook −1R. Nothing about the setup was wrong; the tape was. This is what 70% of trades look like and why the stop is non-negotiable: the gap-down through the breakout-day low is exactly the event the 1-ADR rule is sized for. No averaging down, no "giving it room", no re-entry until a new base forms.
 
@@ -264,38 +264,38 @@ Health care was one of the June 2026 leadership groups as money left tech. This 
 
 ### SMLQ — Episodic pivot · LOSER -1.00R
 
-*Small-cap momentum name (archetype). Trigger 2026-08-11. ADR 7.0%. Entry 8.45 · stop 8.21 · risk 2.82% (0.40× ADR) · max favourable excursion 0.8R.*
+*Small-cap momentum name (archetype). Trigger 2026-08-11. ADR 7.0%. Entry 8.45 · stop 8.20 · risk 2.94% (0.42× ADR) · max favourable excursion 0.8R.*
 
 Mid-August 2026 looked benign — the VIX printed its 2026 low of 14.2 on 17 August with the indices at record highs — but single-stock volatility was at a record spread to index volatility. Quiet index, violent individual names: the exact tape in which a weak gap gets sold.
 
-**Why it was flagged.** SMLQ trades at $7.93 with a 7% ADR (leader-grade) and $14.1M of average daily turnover, so it is volatile enough to pay multiples of risk in days and liquid enough to get size in and out. This is an episodic pivot, not a chart pattern: SMLQ gapped 14% on 2026-08-11 on 1.6x its average volume, after spending the prior 90 sessions in a 55.2% range. Dormancy is the feature, not a bug - the best EPs come out of stocks nobody was watching, because the gap forces a repricing that institutions then have to chase for weeks. It closed in the top 82% of the gap day's range, so buyers held the gap into the bell rather than selling it. It is up 6.7% over one month, 4.3% over three and 58% over six, and it sits 13.5% off its 52-week high. Levels come from the opening range of 2026-08-11 (ORH 8.44 / ORL 8.21); the full day spans 1.6 ADRs, which is why the opening range, not the day, defines the risk.
+**Why it was flagged.** SMLQ trades at $7.93 with a 7% ADR (leader-grade) and $14.1M of average daily turnover, so it is volatile enough to pay multiples of risk in days. It is up 6.7% over one month, 4.3% over three and 58% over six, and it sits 13.5% off its 52-week high. A mechanically valid but second-tier setup, and an episodic pivot rather than a chart pattern: SMLQ gapped 14% on 2026-08-11 on 1.6x its average volume, after spending the prior 90 sessions in a 55.2% range. It closed in the top 82% of the gap day's range. Levels come from the opening range of 2026-08-11 (ORH 8.44 / ORL 8.21); the full day spans 1.6 ADRs, which is why the opening range, not the day, defines the risk. In its favour: it passes all 7 of the Minervini trend-template tests that can be measured here; ADR is leader-grade at 7%; and risk is only 0.42x ADR, so one average day of follow-through pays roughly 2.4R. Caveats — relative strength could not be ranked — this symbol was screened on its own rather than against a universe, so the RS test is unscored; volume was only 1.6x average — the setup wants the full average daily volume inside the first 15-20 minutes, and a quiet gap is usually sold; it closed in the bottom 18% of the gap day's range, so the buyers who made the gap did not stay for the bell; and the prior 90 sessions spanned 55%, so this is not the dormant, forgotten base the setup depends on — there is trapped supply above.
 
-**The plan.** Entry: Buy-stop on a break of the opening-range high (1-min, then add on the 5-min ORH) once price clears 8.44. Reference level $8.45. Stop: $8.21 - Hard stop at the low of the entry day (structural low 8.21). That is 2.8% of price, 0.4x ADR. Targets: 3R at $9.16, 5R at $9.64; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 2,096 shares ($17.7K, 17.7% of equity) risks $499.77 = 0.5% of the account.
+**The plan.** Entry: Buy-stop on a break of the opening-range high (1-min, then add on the 5-min ORH) once price clears 8.44. Reference level $8.45. Stop: $8.2 - Hard stop one tick under the low of the entry day (8.21 low, stop 8.2). That is 2.9% of price, 0.42x ADR. Targets: 3R at $9.19, 5R at $9.69; then trail the balance on the 10-day EMA. Management: Sell 1/3 to 1/2 into strength after 3-5 days and move the stop to breakeven; trail the remainder on the 10-day moving average and exit on the first close below it. Size: 2,012 shares ($17K, 17% of equity) risks $499.86 = 0.5% of the account.
 
 **Fills.**
 
 | Date | Size | Price | R | Why |
 |---|---|---|---|---|
-| 2026-08-11 | 100% | 8.21 | -1.00R | lost the opening range the same session — stopped out intraday |
+| 2026-08-11 | 100% | 8.20 | -1.00R | lost the opening range the same session — stopped out intraday |
 
 **Lesson.** Three criteria failed before the trade was ever taken. Volume was 1.6x average, not the 3x+ the setup demands; the stock was not dormant — it had round-tripped inside a 55%-wide range, leaving trapped supply at every level above; and it closed in the bottom fifth of the gap day's range, meaning the buyers who created the gap were gone by the bell. The screener rejects it outright. Traded anyway, it lost the opening range the same session for a clean −1R.
 
 *Chart: see [docs/executive-summary.html](executive-summary.html#case-SMLQ).*
 
-The scorecard below is the point of the whole document. Two of five trades lost. The five together returned **+23.59R**, and one trade produced 51% of it. At 0.5% risk per trade that is a +11.8% account gain from a sample in which the majority of positions were closed at a loss.
+The scorecard below is the point of the whole document. Two of five trades lost. The five together returned **+23.29R**, and one trade produced 52% of it. At 0.5% risk per trade that is a +11.6% account gain from a sample in which the majority of positions were closed at a loss.
 
 | Symbol | Setup | Trigger | Risk (ADR) | Result | MFE | Equity @0.5% |
 |---|---|---|---|---|---|---|
-| MEMQ | Breakout | 2026-07-02 | 0.54× | +12.07R | 27.3R | 6.04% |
-| NRGX | Episodic pivot | 2026-07-22 | 0.56× | +8.76R | 14.4R | 4.38% |
-| ADVX | Parabolic short | 2026-08-10 | 0.51× | +5.28R | 6.7R | 2.64% |
-| HLTQ | Breakout | 2026-07-23 | 0.39× | -1.52R | 0.0R | -0.76% |
-| SMLQ | Episodic pivot | 2026-08-11 | 0.40× | -1.00R | 0.8R | -0.50% |
-| **Total** | | | | **+23.59R** | | **+11.8%** |
+| MEMQ | Breakout | 2026-07-02 | 0.54× | +12.00R | 27.1R | 6.00% |
+| NRGX | Episodic pivot | 2026-07-22 | 0.58× | +8.54R | 14.0R | 4.27% |
+| ADVX | Parabolic short | 2026-08-10 | 0.51× | +5.26R | 6.7R | 2.63% |
+| HLTQ | Breakout | 2026-07-23 | 0.39× | -1.51R | 0.0R | -0.76% |
+| SMLQ | Episodic pivot | 2026-08-11 | 0.42× | -1.00R | 0.8R | -0.50% |
+| **Total** | | | | **+23.29R** | | **+11.6%** |
 
 > **What the failures are for**
 >
-> HLTQ was a textbook setup that broke out one session before a market-wide risk-off day; nothing in the process was wrong and it still lost 1.52R on a gap through the stop. SMLQ was never eligible — the screener rejected it on three separate criteria before the trade existed. Those are the two ways money is lost in this system: the unavoidable cost of a fixed-risk loss, and the entirely avoidable cost of overriding a filter.
+> HLTQ was a textbook setup that broke out one session before a market-wide risk-off day; nothing in the process was wrong and it still lost 1.51R on a gap through the stop. SMLQ was never eligible — the screener rejected it on three separate criteria before the trade existed. Those are the two ways money is lost in this system: the unavoidable cost of a fixed-risk loss, and the entirely avoidable cost of overriding a filter.
 
 ## What the screener does with all this
 

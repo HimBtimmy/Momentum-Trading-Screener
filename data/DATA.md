@@ -107,6 +107,8 @@ What it does:
    reaching ~55 MB.
 4. **Index** — appends `SPY` (`--index`), exempt from the gates, because the screener
    treats SPY/QQQ/IWM as the market-regime series rather than a candidate.
+5. **Metadata** — writes each symbol's market cap and company name onto its first row, so
+   the screener can rank by market cap and label the cards.
 
 It prints a report: the universe source, symbols written, rows, the session span, file
 size, and every dropped symbol with its reason, and writes a `<out>.meta.json` sidecar
@@ -160,7 +162,10 @@ NVDA,2026-03-03,123.60,126.20,123.10,125.90,198450000
 ```
 
 * `date` and `close` are required; `symbol`, `open`, `high`, `low` and `volume` are used
-  when present. Row order does not matter.
+  when present. Row order does not matter. Quoted fields containing commas are handled.
+* Two optional per-symbol columns are read as metadata: `market_cap` (drives the market-cap
+  band filter and the figure on the card) and `name`. They only need a value on one row per
+  symbol — `fetch_vti_universe.py` writes them on the first row and leaves the rest blank.
 * **At least 130 sessions per symbol** — the six-month relative-strength lookback needs
   126, and the 200-day MA regime context needs more. 300+ sessions is comfortable.
 * A symbol named `SPY`, `QQQ` or `IWM` is treated as the index for the market-regime
