@@ -140,6 +140,36 @@ label.chk { display: inline-flex; align-items: center; gap: 7px; font-size: 14px
 .msg.good { color: var(--status-good); }
 .hint { font-size: 13px; color: var(--ink-muted); margin-top: 10px; }
 
+/* ---- backend panel ----------------------------------------------------- */
+pre.cmd {
+  margin: 0 0 14px; padding: 11px 13px; background: var(--surface-2); border: 1px solid var(--rule);
+  border-radius: 2px; overflow-x: auto;
+}
+pre.cmd code { background: none; padding: 0; font-size: 12.5px; line-height: 1.7; color: var(--ink-primary); }
+.bestatus {
+  margin: 0 0 14px; padding: 10px 13px; border-radius: 2px; font: 500 13px/1.5 var(--font-mono);
+  background: var(--surface-2); border: 1px solid var(--rule); border-left: 3px solid var(--ink-muted);
+  color: var(--ink-secondary);
+}
+.bestatus.up { border-left-color: var(--status-good); }
+.bestatus.down { border-left-color: var(--status-warning); }
+.bestatus.err { border-left-color: var(--status-critical); }
+.bestatus b { color: var(--ink-primary); }
+.progress { margin-top: 16px; }
+.progress .bar {
+  height: 7px; background: var(--surface-3); border-radius: 4px; overflow: hidden;
+}
+.progress .bar i {
+  display: block; height: 100%; width: 0; background: var(--accent);
+  transition: width .25s ease;
+}
+.progress .bar.indeterminate i { width: 34%; animation: qmslide 1.3s ease-in-out infinite; }
+@keyframes qmslide { 0% { margin-left: -34%; } 100% { margin-left: 100%; } }
+.progress .plabel {
+  margin-top: 7px; font: 500 12px/1.5 var(--font-mono); color: var(--ink-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- summary strip ----------------------------------------------------- */
 .summary {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); margin-top: 20px;
@@ -412,6 +442,7 @@ footer.foot p { margin: 0 0 6px; max-width: 96ch; }
 <div class="controls">
   <div class="tabs" role="tablist">
     <button class="tab on" data-panel="demo" id="tab-demo" type="button">Demo universe</button>
+    <button class="tab" data-panel="backend" id="tab-backend" type="button">Backend (yfinance)</button>
     <button class="tab" data-panel="csv" id="tab-csv" type="button">Import CSV</button>
     <button class="tab" data-panel="live" id="tab-live" type="button">Live API</button>
     <button class="tab" data-panel="settings" id="tab-settings" type="button">Risk &amp; filters</button>
@@ -428,6 +459,44 @@ footer.foot p { margin: 0 0 6px; max-width: 96ch; }
     </div>
     <p class="hint">Nothing here is investment advice, and synthetic bars prove nothing about the market. Import
     real data to screen real candidates.</p>
+  </div>
+
+  <div class="panel" id="panel-backend" hidden>
+    <p>Screens the <strong>whole US market</strong> straight from yfinance — no CSV in the middle.
+    A small local server resolves the constituent list, downloads daily bars and applies the
+    liquidity gates; this page screens what comes back. Start it from the repository:</p>
+    <pre class="cmd"><code>pip install -r tools/requirements.txt
+python3 tools/server.py --open</code></pre>
+    <div id="be-status" class="bestatus">Looking for a backend…</div>
+    <div class="field-row">
+      <label class="field"><span>Universe</span>
+        <select id="be-universe">
+          <option value="auto">Auto — Vanguard, then the listing mirror</option>
+          <option value="github">US listing mirror (CRSP-style filter)</option>
+          <option value="vanguard">Vanguard holdings API</option>
+          <option value="snapshot">Committed snapshot (no network)</option>
+        </select>
+      </label>
+      <label class="field"><span>Symbol cap</span><input type="number" id="be-top" min="0" step="50"
+        title="largest N by weight or market cap; 0 downloads the whole universe"></label>
+      <label class="field"><span>Sessions</span><input type="number" id="be-sessions" min="130" max="2000" step="1"></label>
+      <label class="field"><span>Backend URL</span><input type="text" id="be-url" size="21" spellcheck="false"></label>
+      <button class="go" id="be-fetch" type="button">Fetch from yfinance</button>
+      <button class="go ghost" id="be-cancel" type="button" hidden>Cancel</button>
+    </div>
+    <div class="checks-row">
+      <label class="chk"><input type="checkbox" id="be-refresh"> Ignore today's cache</label>
+      <label class="chk"><input type="checkbox" id="be-savecsv"> Also write a CSV into <code>data/</code></label>
+    </div>
+    <div class="progress" id="be-progress" hidden>
+      <div class="bar"><i id="be-bar"></i></div>
+      <div class="plabel" id="be-plabel"></div>
+    </div>
+    <div class="msg" id="be-msg" hidden></div>
+    <p class="hint">The whole universe is ~3,500 tickers and takes several minutes on the first
+    run; the result is cached for the day, so a second fetch is instant. Start with a cap of 300
+    to see it work end to end. Yahoo rate-limits aggressively — if batches come back empty, raise
+    the delay in <code>tools/server.py --sleep</code>.</p>
   </div>
 
   <div class="panel" id="panel-csv" hidden>

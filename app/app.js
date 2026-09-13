@@ -686,6 +686,220 @@
     run();
   }
 
+  /* ------------------------------------------------- the local yfinance backend
+   *
+   * tools/server.py does the downloading, because Yahoo's endpoints send no
+   * CORS headers and a browser cannot call them directly. The screening still
+   * happens here: the backend returns bars, not verdicts.
+   */
+  var BE = { job: null, timer: null, busy: false };
+
+  function beBase() {
+    var url = ($('#be-url') && $('#be-url').value || '').trim().replace(/\/+$/, '');
+    if (url) return url;
+    // Served by the backend itself? Then it is same-origin.
+    if (/^https?:$/.test(location.protocol) && location.host) return '';
+    return 'http://127.0.0.1:8765';
+  }
+
+  function beFetchJson(path, opts) {
+    return fetch(beBase() + path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (body) {
+        if (!r.ok) throw new Error(body.error || ('HTTP ' + r.status));
+        return body;
+      });
+    });
+  }
+
+  function beStatus(cls, html) {
+    var el = $('#be-status');
+    el.className = 'bestatus ' + cls;
+    el.innerHTML = html;
+  }
+
+  /* A published artifact is sandboxed: it cannot open a socket to your machine,
+   * and firing a request that the page's own policy will block just prints a
+   * console error. So probe only where a backend could actually answer — a
+   * local page, or a URL the user typed in. */
+  function beReachable() {
+    if (($('#be-url').value || '').trim()) return true;
+    if (location.protocol === 'file:') return true;
+    return /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)$/.test(location.hostname);
+  }
+
+  function beHealth() {
+    if (!beReachable()) {
+      $('#be-fetch').disabled = true;
+      beStatus('down',
+        '<b>No backend from a published page.</b> This page is sandboxed and cannot reach a ' +
+        'server on your machine. Clone the repo, run <code>python3 tools/server.py --open</code>, ' +
+        'and use the copy it serves — or use the Import CSV tab here. If your backend is ' +
+        'somewhere reachable, put its URL in the field below.');
+      return Promise.resolve(null);
+    }
+    return beFetchJson('/api/health').then(function (h) {
+      if (!h.ready) {
+        beStatus('err', '<b>Backend is running but yfinance is not installed.</b> ' +
+          esc(h.hint || 'pip install -r tools/requirements.txt'));
+        return h;
+      }
+      var cache = h.cache && h.cache.entries
+        ? ' · ' + h.cache.entries + ' cached build' + (h.cache.entries === 1 ? '' : 's')
+        : '';
+      beStatus('up', '<b>Backend up.</b> yfinance ' + esc(h.yfinance) +
+        ', pandas ' + esc(h.pandas) + cache);
+      $('#be-fetch').disabled = false;
+      // Let the server's own defaults fill the form, unless this browser has
+      // remembered a choice of its own.
+      if (!LS.get('backend', null)) {
+        beFetchJson('/api/config').then(function (cfg) {
+          if (isFinite(cfg.top)) $('#be-top').value = cfg.top;
+          if (isFinite(cfg.sessions)) $('#be-sessions').value = cfg.sessions;
+        }).catch(function () { /* the form keeps its built-in defaults */ });
+      }
+      return h;
+    }).catch(function (err) {
+      $('#be-fetch').disabled = true;
+      beStatus('down', '<b>No backend at ' + esc(beBase() || location.origin) + '.</b> ' +
+        'Start it with <code>python3 tools/server.py</code> (' + esc(err.message) + ').');
+      return null;
+    });
+  }
+
+  function beSetBusy(busy) {
+    BE.busy = busy;
+    $('#be-fetch').disabled = busy;
+    $('#be-cancel').hidden = !busy;
+    $('#be-progress').hidden = !busy;
+  }
+
+  var BE_PHASE = {
+    universe: 'Resolving the constituent list',
+    prices: 'Downloading daily bars',
+    validate: 'Validating bars and applying the gates',
+    packing: 'Packing the dataset',
+    starting: 'Starting'
+  };
+
+  function beProgress(st) {
+    var pct = st.total > 0 ? Math.round(st.done / st.total * 100) : 0;
+    $('#be-bar').style.width = pct + '%';
+    $('#be-bar').parentNode.classList.toggle('indeterminate', st.total <= 0);
+    $('#be-plabel').textContent =
+      (BE_PHASE[st.phase] || st.phase) +
+      (st.total > 0 ? ' — ' + st.done.toLocaleString() + ' / ' + st.total.toLocaleString() +
+        ' (' + pct + '%)' : '') +
+      (st.message ? ' · ' + st.message : '') +
+      ' · ' + st.elapsed + 's';
+  }
+
+  function beStartFetch() {
+    if (BE.busy) return;
+    beSetBusy(true);
+    beMsg('', false);
+    $('#be-plabel').textContent = 'Starting…';
+    $('#be-bar').style.width = '0%';
+
+    var body = {
+      universe: $('#be-universe').value,
+      sessions: parseInt($('#be-sessions').value, 10) || 252,
+      top: parseInt($('#be-top').value, 10) || 0,
+      minPrice: state.settings.minPrice,
+      minTurnover: state.settings.minDollarVol / 1e6,
+      refresh: $('#be-refresh').checked,
+      saveCsv: $('#be-savecsv').checked
+    };
+    LS.set('backend', { universe: body.universe, sessions: body.sessions, top: body.top,
+                        url: $('#be-url').value.trim() });
+
+    beFetchJson('/api/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (started) {
+      BE.job = started.id;
+      BE.timer = setInterval(bePoll, 700);
+      bePoll();
+    }).catch(function (err) {
+      beSetBusy(false);
+      beMsg(err.message, true);
+    });
+  }
+
+  function bePoll() {
+    if (!BE.job) return;
+    beFetchJson('/api/jobs/' + BE.job).then(function (st) {
+      beProgress(st);
+      if (st.state === 'running' || st.state === 'queued') return;
+      clearInterval(BE.timer); BE.timer = null;
+      if (st.state === 'error') { beSetBusy(false); beMsg(st.error || 'the build failed', true); return; }
+      if (st.state === 'cancelled') { beSetBusy(false); beMsg('Cancelled.', false); return; }
+      $('#be-plabel').textContent = 'Transferring the dataset…';
+      beFetchJson('/api/jobs/' + BE.job + '/data').then(function (data) {
+        beSetBusy(false);
+        loadBackendPayload(data, st);
+      }).catch(function (err) { beSetBusy(false); beMsg(err.message, true); });
+    }).catch(function (err) {
+      clearInterval(BE.timer); BE.timer = null;
+      beSetBusy(false);
+      beMsg('Lost the backend: ' + err.message, true);
+    });
+  }
+
+  function beCancel() {
+    if (!BE.job) return;
+    beFetchJson('/api/jobs/' + BE.job + '/cancel', { method: 'POST' })
+      .catch(function () { /* the poll will report whatever happened */ });
+  }
+
+  function beMsg(text, bad) {
+    var el = $('#be-msg');
+    el.hidden = !text;
+    el.className = 'msg ' + (bad ? 'bad' : 'good');
+    el.textContent = text;
+  }
+
+  /* The wire format is compact — ["2026-09-11", o, h, l, c, v] — because the
+   * same six keys repeated across a few hundred thousand bars is tens of
+   * megabytes of nothing. */
+  function beBars(rows) {
+    return rows.map(function (b) {
+      return { date: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] };
+    });
+  }
+
+  function loadBackendPayload(data, status) {
+    if (!data || !data.symbols || !data.symbols.length) { beMsg('The backend returned no symbols.', true); return; }
+    state.universe = data.symbols.map(function (s) {
+      return { symbol: s.symbol, name: s.name || '', marketCap: s.marketCap || 0, bars: beBars(s.bars) };
+    });
+    state.indexBars = data.index ? beBars(data.index.bars) : null;
+    state.source = 'backend';
+
+    var p = data.provenance || {};
+    var bars = state.universe.reduce(function (n, u) { return n + u.bars.length; }, 0);
+    state.provenance = {
+      synthetic: false,
+      note: state.universe.length.toLocaleString() + ' symbols, ' +
+        bars.toLocaleString() + ' bars from ' + (p.price_source || 'yfinance') +
+        ' (universe: ' + (p.universe_source || 'unknown') + '), ' +
+        (p.session_span ? p.session_span[0] + ' to ' + p.session_span[1] : '') +
+        (p.adjusted ? ', split and dividend adjusted' : ', unadjusted') +
+        (state.indexBars ? '. Index series loaded for the regime filter.'
+                         : '. No index series, so the regime filter is off.')
+    };
+    var b = dateBounds();
+    state.asOf = b.max;
+    syncDateInput(b);
+    renderProvenance();
+    var dropped = p.dropped ? Object.keys(p.dropped).length : 0;
+    beMsg('Loaded ' + state.universe.length.toLocaleString() + ' symbols' +
+      (dropped ? ' (' + dropped.toLocaleString() + ' dropped by the liquidity gates)' : '') +
+      ((status && status.cached) ? ' — from today\'s cache.' : '.') +
+      ((status && status.savedCsv) ? ' Saved ' + status.savedCsv + '.' : ''), false);
+    run();
+  }
+
   var PROVIDERS = {
     fmp: {
       label: 'Financial Modeling Prep',
@@ -823,6 +1037,10 @@
       loadCsv(t, 'pasted CSV');
     });
     $('#fetch-live').addEventListener('click', fetchLive);
+    $('#be-fetch').addEventListener('click', beStartFetch);
+    $('#be-cancel').addEventListener('click', beCancel);
+    $('#be-url').addEventListener('change', beHealth);
+    $('#tab-backend').addEventListener('click', function () { if (!BE.busy) beHealth(); });
     $('#asof').addEventListener('change', function () { state.asOf = this.value; run(); });
     $('#view-cards').addEventListener('click', function () { setView('cards'); });
     $('#view-table').addEventListener('click', function () { setView('table'); });
@@ -870,6 +1088,12 @@
       if (ev.key === 'Escape' && state.detail) closeDetail();
     });
 
+    var be = LS.get('backend', {});
+    $('#be-universe').value = be.universe || 'auto';
+    $('#be-sessions').value = be.sessions || 252;
+    $('#be-top').value = isFinite(be.top) ? be.top : 300;
+    $('#be-url').value = be.url || '';
+
     $('#provider').value = LS.get('provider', 'fmp');
     $('#apikey').value = LS.get('apikey', '');
     $('#symbols').value = LS.get('symbols', 'NVDA AMD MU AVGO SMCI CRWD PLTR SPY');
@@ -898,5 +1122,6 @@
   if (saved && typeof saved === 'object') state.settings = Object.assign(state.settings, saved);
   wire();
   wireValues();
+  beHealth();
   loadDemo();
 })();

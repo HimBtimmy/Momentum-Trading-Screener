@@ -59,12 +59,30 @@ The bundled universe is **synthetic** — clearly labelled in the app and genera
 `tools/build-datasets.mjs` on the real 2025–26 trading calendar, because every market-data
 host was blocked by the build environment's network policy.
 
-For real data, build a CSV from the whole US market:
+For real data, the shortest path is the **local backend** — no CSV in the middle:
 
 ```bash
 pip install -r tools/requirements.txt
+python3 tools/server.py --open          # serves the app and does the downloading
+```
+
+The page it opens has a **Backend (yfinance)** tab: pick a universe, press *Fetch from
+yfinance*, watch the progress bar. The server resolves the constituent list, downloads
+daily bars, applies the liquidity gates and hands the browser JSON; the screening still
+happens in the browser, so `app/engine.js` stays the only place the strategy is defined.
+Results are cached for the day, so the second fetch is instant, and a build can be
+cancelled mid-download. It binds to `127.0.0.1` and serves only `app/`, `docs/` and
+`data/`.
+
+A backend is needed because yfinance is a Python client for Yahoo endpoints that send no
+CORS headers — a browser cannot call them directly, whatever key you have.
+
+The same pipeline still runs as a one-shot CSV build:
+
+```bash
 python3 tools/fetch_vti_universe.py --out data/vti-universe.csv   # VTI constituents, 252 sessions
 python3 tools/fetch_vti_universe.py --top 500 --out data/top500.csv   # quick first run
+python3 tools/fetch_vti_universe.py --universe snapshot --top 300 --out data/quick.csv  # no universe lookup
 ```
 
 Then open the screener → **Import CSV**. The script resolves VTI's constituents — from
@@ -84,7 +102,7 @@ app/
   engine.js           the strategy engine — indicators, base detection, the three
                       setups, trade plans, sizing, justification text (no dependencies)
   chart.js            annotated candlestick SVG, shared with the summary build
-  app.js              UI wiring, CSV import, live-API adapters
+  app.js              UI wiring, CSV import, backend client, live-API adapters
   datasets.js         generated: the bundled demo universe
 docs/
   executive-summary.html / .md    generated: the written analysis
@@ -96,8 +114,10 @@ data/
   examples-2026.json  generated: the five case-study series
   case-results.json   generated: engine output + simulated outcome per case
 tools/
-  fetch_vti_universe.py   builds a screener-ready CSV from VTI constituents (Python)
-  requirements.txt        its dependencies
+  fetch_vti_universe.py   resolves the universe and downloads bars; writes the CSV (Python)
+  server.py               local backend: serves the app and drives that pipeline
+                          on demand for the Backend tab (standard library only)
+  requirements.txt        their dependencies
   gen-datasets.mjs    trading calendar + the synthetic bar generator
   scenarios.mjs       the hand-shaped scenarios
   simulate.mjs        replays his management rules to produce R-multiples

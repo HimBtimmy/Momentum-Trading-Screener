@@ -37,7 +37,51 @@ summary is real and cited; the bars are not.
 
 ## Loading real data
 
-### The VTI universe script (the easy route)
+### The local backend (the easy route)
+
+```bash
+pip install -r tools/requirements.txt
+python3 tools/server.py --open
+```
+
+That serves the app at `http://127.0.0.1:8765/app/index.html` and adds a working
+**Backend (yfinance)** tab to it: pick a universe, a symbol cap and a session count, press
+**Fetch from yfinance**, and the bars arrive as JSON — no file in the middle.
+
+**Why a backend is needed at all.** `yfinance` is a Python client for Yahoo's chart
+endpoints, and those endpoints send no `Access-Control-Allow-Origin` header. A browser
+therefore cannot call them, from any page, with or without a key. The backend is the one
+piece that has to run outside the browser; it does not screen anything, it only fetches.
+`app/engine.js` remains the single definition of the strategy, in the browser, for demo
+data and live data alike.
+
+| Endpoint | What it does |
+| --- | --- |
+| `GET /api/health` | whether `yfinance` imports, versions, cache size |
+| `GET /api/config` | the defaults the form prefills from |
+| `POST /api/fetch` | starts a build, returns a job id |
+| `GET /api/jobs/<id>` | phase, done/total, message, state |
+| `GET /api/jobs/<id>/data` | the finished dataset (gzipped when accepted) |
+| `POST /api/jobs/<id>/cancel` | stops a download in flight |
+
+Notes that matter in practice:
+
+* **The whole universe is ~3,500 tickers** and takes several minutes on the first run.
+  Start with a symbol cap of 300. Yahoo rate-limits aggressively; if batches come back
+  empty, raise `--sleep`.
+* **Results are cached for the day**, keyed by the options you chose, under `data/cache/`
+  (git-ignored). The second fetch of the same thing is instant. Tick *Ignore today's
+  cache* to force a re-download.
+* **Bars travel as arrays** — `["2026-09-11", open, high, low, close, volume]`. Named keys
+  would repeat the same six words across a few hundred thousand bars.
+* **Scope.** It binds to `127.0.0.1`, serves only `app/`, `docs/` and `data/`, refuses a
+  public bind unless you set `QM_ALLOW_PUBLIC=1`, and accepts cross-origin API calls only
+  from `file://` and localhost pages. It holds no credentials — it is a development tool,
+  not a service.
+* **A published artifact cannot use it.** That page is sandboxed and cannot open a socket
+  to your machine; the tab says so and points at the CSV route instead.
+
+### The VTI universe script (the CSV route)
 
 `tools/fetch_vti_universe.py` builds a screener-ready CSV from the constituents of
 Vanguard Total Stock Market ETF (VTI) — about 3,600 US listings, i.e. effectively the

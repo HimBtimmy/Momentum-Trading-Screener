@@ -1,4 +1,5 @@
-# Dependencies for tools/fetch_vti_universe.py
+# Dependencies for tools/fetch_vti_universe.py and tools/server.py
+# (the server itself is standard library only — these are for the download)
 requests>=2.31
 pandas>=2.0
 yfinance>=0.2.40        # only needed for --source yfinance (the default)

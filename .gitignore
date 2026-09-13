@@ -2,6 +2,8 @@
 data/*.csv
 # ...but the resolved universe snapshot is small and worth keeping
 !data/vti-constituents.csv
+# Datasets the local backend caches for the day
+data/cache/
 data/holdings-*.json
 data/tickers-*.txt
 

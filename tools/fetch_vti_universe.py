@@ -60,6 +60,38 @@ from typing import Any, Iterable, Iterator, Sequence
 LOG = logging.getLogger("vti")
 
 # --------------------------------------------------------------------------- #
+# Progress reporting
+#
+# A download of 3,500 tickers takes minutes, so every long stage reports where
+# it is. The CLI ignores this (it logs instead); ``tools/server.py`` turns it
+# into a progress bar in the browser. A callback may raise ``Cancelled`` to
+# stop the build — that is how the app's Cancel button works.
+# --------------------------------------------------------------------------- #
+
+ProgressFn = "Callable[[str, int, int, str], None]"
+
+
+class Cancelled(Exception):
+    """Raised through a progress callback to abandon a build in flight."""
+
+
+def _tick(progress, phase: str, done: int, total: int, message: str = "") -> None:
+    """Report progress, letting Cancelled through and swallowing nothing else.
+
+    A reporting bug must never take down a download that is halfway through a
+    3,500-symbol universe, so anything other than Cancelled is logged and
+    dropped.
+    """
+    if progress is None:
+        return
+    try:
+        progress(phase, done, total, message)
+    except Cancelled:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        LOG.debug("progress callback failed: %s", exc)
+
+# --------------------------------------------------------------------------- #
 # Universe provider 1: Vanguard's own holdings API (authoritative)
 # --------------------------------------------------------------------------- #
 
@@ -284,6 +316,9 @@ GITHUB_EXCHANGES = ("nasdaq", "nyse", "amex")
 # Vanguard's fund page / holdings aggregators, September 2026.
 VTI_PUBLISHED_HOLDINGS = 3480
 
+# The constituent snapshot committed to the repo, used by --universe snapshot.
+DEFAULT_SNAPSHOT = Path(__file__).resolve().parent.parent / "data" / "vti-constituents.csv"
+
 # The $40M floor was calibrated against that count: with the instrument and
 # domicile filters below, it yields ~3,500 names, i.e. within ~1% of VTI.
 DEFAULT_MIN_MARKET_CAP = 40_000_000
@@ -421,6 +456,7 @@ def fetch_prices_yfinance(
     adjust: bool = True,
     sleep: float = 1.0,
     retries: int = 2,
+    progress: ProgressFn | None = None,
     **_ignored: Any,   # providers share one call signature; ignore the rest
 ):
     """Download daily bars in batches. Returns ``{ticker: DataFrame}``."""
@@ -429,9 +465,12 @@ def fetch_prices_yfinance(
 
     frames: dict[str, "pd.DataFrame"] = {}
     batches = list(_chunks(tickers, chunk_size))
+    done = 0
 
     for index, batch in enumerate(batches, start=1):
         LOG.info("prices %d/%d — %d tickers", index, len(batches), len(batch))
+        _tick(progress, "prices", done, len(tickers),
+              f"downloading batch {index} of {len(batches)}")
         raw = None
         for attempt in range(1, retries + 1):
             try:
@@ -461,6 +500,9 @@ def fetch_prices_yfinance(
         elif len(batch) == 1:
             frames[batch[0]] = raw.dropna(how="all")
 
+        done += len(batch)
+        _tick(progress, "prices", done, len(tickers),
+              f"{len(frames)} symbols returned so far")
         if sleep and index < len(batches):
             time.sleep(sleep)
 
@@ -471,6 +513,7 @@ def fetch_prices_stooq(
     tickers: Sequence[str],
     sessions: int = 252,
     sleep: float = 0.4,
+    progress: ProgressFn | None = None,
     **_ignored: Any,
 ):
     """No-key fallback: one CSV per symbol from stooq.com.
@@ -500,6 +543,7 @@ def fetch_prices_stooq(
             LOG.debug("%s: %s", ticker, exc)
         if index % 50 == 0:
             LOG.info("prices %d/%d (stooq)", index, len(tickers))
+        _tick(progress, "prices", index, len(tickers), f"{len(frames)} symbols returned so far")
         if sleep:
             time.sleep(sleep)
     return frames
@@ -613,11 +657,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     universe = parser.add_argument_group("universe")
     universe.add_argument(
-        "--universe", choices=("auto", "vanguard", "github", "file", "tickers"), default="auto",
+        "--universe", choices=("auto", "vanguard", "github", "snapshot", "file", "tickers"),
+        default="auto",
         help="where the constituent list comes from. vanguard: the fund's own holdings API "
              "(exact holdings and weights). github: a daily-updated US exchange listing "
              "mirror, filtered to a CRSP-style common-stock universe (works when Vanguard "
-             "is unreachable). auto (default): vanguard, falling back to github.")
+             "is unreachable). snapshot: the constituent list committed to this repo, no "
+             "network at all. auto (default): vanguard, falling back to github.")
+    universe.add_argument("--constituents-file", type=Path,
+                          help="read the universe from a snapshot written by --constituents-out")
     universe.add_argument("--fund", default="VTI", help="fund ticker on Vanguard's API (default: VTI)")
     universe.add_argument("--holdings-url", help="override the holdings endpoint entirely")
     universe.add_argument("--holdings-file", type=Path,
@@ -729,6 +777,34 @@ def _universe_from_tickers(args: argparse.Namespace) -> list[Holding]:
     return holdings
 
 
+def _universe_from_constituents(path: Path) -> list[Holding]:
+    """Read a constituent snapshot written by ``--constituents-out``.
+
+    Columns: symbol, name, exchange_or_type, market_cap, weight_pct. The repo
+    ships one at ``data/vti-constituents.csv`` so a run can start from a known
+    universe without touching the network at all — useful when the listing
+    mirror is blocked, and the fastest path for a repeat build.
+    """
+    holdings: list[Holding] = []
+    with path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            ticker = clean_ticker(row.get("symbol"))
+            if not ticker:
+                continue
+            holdings.append(Holding(
+                ticker=ticker,
+                raw_ticker=(row.get("symbol") or ticker).strip(),
+                name=(row.get("name") or ticker).strip(),
+                weight=_to_float(row.get("weight_pct")) or 0.0,
+                kind=(row.get("exchange_or_type") or "").strip(),
+                market_cap=_to_float(row.get("market_cap")) or 0.0,
+            ))
+    if not holdings:
+        raise ValueError(f"{path} has no usable rows")
+    LOG.info("read %d constituents from %s", len(holdings), path)
+    return holdings
+
+
 def _universe_from_file(args: argparse.Namespace) -> list[Holding]:
     payload = json.loads(args.holdings_file.read_text(encoding="utf-8"))
     LOG.info("read holdings JSON from %s", args.holdings_file)
@@ -744,8 +820,13 @@ def load_universe(args: argparse.Namespace) -> tuple[list[Holding], str]:
         return _universe_from_tickers(args), "tickers-file"
     if args.holdings_file:
         return _universe_from_file(args), "holdings-file"
+    if getattr(args, "constituents_file", None):
+        return _universe_from_constituents(args.constituents_file), "constituents-snapshot"
 
     choice = args.universe
+    if choice == "snapshot":
+        return _universe_from_constituents(DEFAULT_SNAPSHOT), "constituents-snapshot"
+
     if choice == "vanguard":
         return _universe_from_vanguard(args), "vanguard"
     if choice == "github":
@@ -766,6 +847,132 @@ def load_universe(args: argparse.Namespace) -> tuple[list[Holding], str]:
         return _universe_from_github(args), "listing-mirror (Vanguard unreachable)"
 
 
+# --------------------------------------------------------------------------- #
+# The pipeline, callable
+#
+# ``main`` is a thin shell over these two: the local server in tools/server.py
+# runs the identical code path, so the app and the CLI can never drift.
+# --------------------------------------------------------------------------- #
+
+@dataclass
+class Universe:
+    holdings: list[Holding]
+    tickers: list[str]          # holdings + the index proxy
+    index_symbol: str
+    source: str
+
+
+@dataclass
+class BuildResult:
+    rows: list[Bar]             # sorted by (symbol, date)
+    universe: Universe
+    dropped: dict[str, str]     # ticker -> why it was not written
+    kept: int
+    seconds: float
+
+
+def resolve_universe(args: argparse.Namespace, progress=None) -> Universe:
+    """Stage 1: the constituent list, filtered, with the index proxy appended."""
+    _tick(progress, "universe", 0, 0, "resolving the constituent list")
+    holdings, source = load_universe(args)
+    holdings = filter_holdings(holdings, args.top, args.min_weight)
+    if not holdings:
+        raise ValueError("no holdings survived the weight filters")
+
+    tickers = [h.ticker for h in holdings]
+    index_symbol = (args.index or "").strip().upper()
+    if index_symbol and index_symbol not in tickers:
+        tickers.append(index_symbol)
+
+    LOG.info("universe: %d symbols%s", len(tickers),
+             f" (+{index_symbol} as the index proxy)" if index_symbol else "")
+    _tick(progress, "universe", len(tickers), len(tickers),
+          f"{len(tickers):,} symbols from {source}")
+    return Universe(holdings, tickers, index_symbol, source)
+
+
+def download_bars(args: argparse.Namespace, universe: Universe, progress=None) -> BuildResult:
+    """Stage 2: the bars, trimmed, validated and put through the quality gates."""
+    fetch = SOURCES[args.source]
+    started = time.time()
+    frames = fetch(
+        universe.tickers,
+        period=args.period,
+        chunk_size=args.chunk_size,
+        adjust=not args.no_adjust,
+        sleep=args.sleep,
+        sessions=args.sessions,
+        progress=progress,
+    )
+    elapsed = time.time() - started
+    LOG.info("downloaded %d/%d symbols in %.0fs", len(frames), len(universe.tickers), elapsed)
+    if not frames:
+        raise ValueError("no price data returned — check connectivity and the --source choice")
+
+    _tick(progress, "validate", 0, len(universe.tickers), "trimming and validating bars")
+    rows: list[Bar] = []
+    dropped: dict[str, str] = {}
+    kept = 0
+    for done, ticker in enumerate(universe.tickers, start=1):
+        frame = frames.get(ticker)
+        if frame is None or len(frame) == 0:
+            dropped[ticker] = "no data returned"
+            continue
+        bars = frame_to_bars(ticker, frame, args.sessions)
+        if not bars:
+            dropped[ticker] = "no usable bars"
+            continue
+        if ticker != universe.index_symbol:
+            reason = screen_filters(bars, args.min_sessions, args.min_price, args.min_turnover)
+            if reason:
+                dropped[ticker] = reason
+                continue
+        elif len(bars) < args.min_sessions:
+            LOG.warning("index %s has only %d sessions — the regime filter needs ~210 for "
+                        "a 200-day average", ticker, len(bars))
+        rows.extend(bars)
+        kept += 1
+        if done % 250 == 0:
+            _tick(progress, "validate", done, len(universe.tickers), f"{kept} symbols kept")
+
+    _tick(progress, "validate", len(universe.tickers), len(universe.tickers),
+          f"{kept} symbols passed the quality gates")
+    if not rows:
+        raise ValueError("every symbol failed the quality gates")
+
+    rows.sort(key=lambda b: (b.symbol, b.date))
+    return BuildResult(rows, universe, dropped, kept, elapsed)
+
+
+def build_dataset(args: argparse.Namespace, progress=None) -> BuildResult:
+    """Both stages. What the server calls."""
+    return download_bars(args, resolve_universe(args, progress), progress)
+
+
+def build_meta(args: argparse.Namespace, result: BuildResult) -> dict:
+    """Provenance for the dataset — written beside the CSV and served by the API."""
+    span = sorted({b.date for b in result.rows})
+    return {
+        "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "universe_source": result.universe.source,
+        "fund": args.fund,
+        "price_source": args.source,
+        "adjusted": not args.no_adjust,
+        "sessions_requested": args.sessions,
+        "symbols_written": result.kept,
+        "rows": len(result.rows),
+        "session_span": [span[0], span[-1]],
+        "filters": {
+            "top": args.top, "min_weight": args.min_weight,
+            "min_market_cap": args.min_market_cap,
+            "min_sessions": args.min_sessions, "min_price": args.min_price,
+            "min_turnover_musd": args.min_turnover,
+        },
+        "index_symbol": result.universe.index_symbol or None,
+        "dropped": result.dropped,
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     logging.basicConfig(
@@ -782,7 +989,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     try:
-        holdings, source = load_universe(args)
+        universe = resolve_universe(args)
     except PermissionError as exc:
         LOG.error("%s", exc)
         return 2
@@ -793,22 +1000,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "If the network blocks investor.vanguard.com (corporate proxy, VPN, or "
                 "Vanguard's own edge), open the endpoint in a browser, save the JSON, and "
                 "re-run with --holdings-file <saved.json>. --tickers-file also works with a "
-                "plain list of symbols."
+                "plain list of symbols, and --universe snapshot uses the constituent list "
+                "committed to this repo."
             )
         return 2
 
-    holdings = filter_holdings(holdings, args.top, args.min_weight)
-    if not holdings:
-        LOG.error("no holdings survived the weight filters")
-        return 1
-
-    tickers = [h.ticker for h in holdings]
-    index_symbol = (args.index or "").strip().upper()
-    if index_symbol and index_symbol not in tickers:
-        tickers.append(index_symbol)
-
-    LOG.info("universe: %d symbols%s", len(tickers),
-             f" (+{index_symbol} as the index proxy)" if index_symbol else "")
+    holdings, tickers, index_symbol = universe.holdings, universe.tickers, universe.index_symbol
     if args.tickers_out:
         args.tickers_out.parent.mkdir(parents=True, exist_ok=True)
         args.tickers_out.write_text("\n".join(tickers) + "\n", encoding="utf-8")
@@ -832,73 +1029,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         LOG.info("dry run — first 15: %s", preview)
         return 0
 
-    fetch = SOURCES[args.source]
-    started = time.time()
-    frames = fetch(
-        tickers,
-        period=args.period,
-        chunk_size=args.chunk_size,
-        adjust=not args.no_adjust,
-        sleep=args.sleep,
-        sessions=args.sessions,
-    )
-    LOG.info("downloaded %d/%d symbols in %.0fs", len(frames), len(tickers), time.time() - started)
-    if not frames:
-        LOG.error("no price data returned — check connectivity and the --source choice")
+    try:
+        result = download_bars(args, universe)
+    except Exception as exc:  # noqa: BLE001
+        LOG.error("%s", exc)
         return 1
 
-    rows: list[Bar] = []
-    dropped: dict[str, str] = {}
-    kept = 0
-    for ticker in tickers:
-        frame = frames.get(ticker)
-        if frame is None or len(frame) == 0:
-            dropped[ticker] = "no data returned"
-            continue
-        bars = frame_to_bars(ticker, frame, args.sessions)
-        if not bars:
-            dropped[ticker] = "no usable bars"
-            continue
-        if ticker != index_symbol:
-            reason = screen_filters(bars, args.min_sessions, args.min_price, args.min_turnover)
-            if reason:
-                dropped[ticker] = reason
-                continue
-        elif len(bars) < args.min_sessions:
-            LOG.warning("index %s has only %d sessions — the regime filter needs ~210 for "
-                        "a 200-day average", ticker, len(bars))
-        rows.extend(bars)
-        kept += 1
-
-    if not rows:
-        LOG.error("every symbol failed the quality gates")
-        return 1
-
-    rows.sort(key=lambda b: (b.symbol, b.date))
+    rows, dropped, kept, source = result.rows, result.dropped, result.kept, universe.source
     written = write_csv(args.out, rows, {h.ticker: h for h in holdings})
     size_mb = args.out.stat().st_size / 1e6
-    dates = (rows[0].date, rows[-1].date)
     span = sorted({b.date for b in rows})
-
-    meta = {
-        "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "universe_source": source,
-        "fund": args.fund,
-        "price_source": args.source,
-        "adjusted": not args.no_adjust,
-        "sessions_requested": args.sessions,
-        "symbols_written": kept,
-        "rows": written,
-        "session_span": [span[0], span[-1]],
-        "filters": {
-            "top": args.top, "min_weight": args.min_weight,
-            "min_market_cap": args.min_market_cap,
-            "min_sessions": args.min_sessions, "min_price": args.min_price,
-            "min_turnover_musd": args.min_turnover,
-        },
-        "index_symbol": index_symbol or None,
-        "dropped": dropped,
-    }
+    meta = build_meta(args, result)
     meta_path = args.out.with_suffix(args.out.suffix + ".meta.json")
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
