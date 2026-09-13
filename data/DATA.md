@@ -74,6 +74,13 @@ Notes that matter in practice:
   cache* to force a re-download.
 * **Bars travel as arrays** — `["2026-09-11", open, high, low, close, volume]`. Named keys
   would repeat the same six words across a few hundred thousand bars.
+* **Earnings growth is optional and separate.** Tick *Fetch earnings growth* (or pass
+  `--fundamentals` to the CSV builder) to add latest-quarter YoY EPS and sales per symbol —
+  the Minervini screen's c6 test, and the only figure here that cannot be derived from price
+  bars. It costs one request per ticker, so it is only fetched for names that already pass
+  the MA-stack prescreen, and never for the index proxy. Without it c6 is left unassessed
+  rather than failed. The CSV carries it in `eps_yoy`, `sales_yoy` and `fund_quarter`,
+  written once per symbol.
 * **Scope.** It binds to `127.0.0.1`, serves only `app/`, `docs/` and `data/`, refuses a
   public bind unless you set `QM_ALLOW_PUBLIC=1`, and accepts cross-origin API calls only
   from `file://` and localhost pages. It holds no credentials — it is a development tool,

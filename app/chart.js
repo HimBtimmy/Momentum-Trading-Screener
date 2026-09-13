@@ -134,14 +134,19 @@
     const levels = [];
     const addLevel = (v, cls, label) => { if (Number.isFinite(v)) levels.push({ v, cls, label }); };
     const near = (a, b) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) / b < 0.004;
-    if (near(entry, pivot)) {
+    if (Array.isArray(opt.levels)) {
+      // The caller owns the level list — two screeners can put their own pivots
+      // and stops on the same chart, and the page decides which to show.
+      opt.levels.forEach((L) => addLevel(L.v, L.cls, L.label));
+    } else if (near(entry, pivot)) {
       addLevel(pivot, 'pivot', `pivot ${f2(pivot)}`);
       addLevel(entry, 'entry', `entry ${f2(entry)} (+${f2((entry / pivot - 1) * 100)}%)`);
     } else {
       addLevel(pivot, 'pivot', `pivot ${f2(pivot)}`);
       addLevel(entry, 'entry', `entry ${f2(entry)}`);
+      addLevel(stop, 'stop', `stop ${f2(stop)}`);
     }
-    addLevel(stop, 'stop', `stop ${f2(stop)}`);
+    if (!Array.isArray(opt.levels) && near(entry, pivot)) addLevel(stop, 'stop', `stop ${f2(stop)}`);
 
     for (const L of levels) {
       out.push(`<line class="qm-level ${L.cls}" x1="${PADL}" y1="${f2(y(L.v))}" x2="${f2(PADL + plotW)}" y2="${f2(y(L.v))}" />`);
@@ -222,6 +227,12 @@
   .qm-level-tag.pivot text { fill: var(--qm-ma50); }
   .qm-level-tag.entry text { fill: var(--status-good); }
   .qm-level-tag.stop text { fill: var(--status-critical); }
+  /* the second screener's levels: same colours, finer dash, so one chart can
+     carry both plans without either being mistaken for the other */
+  .qm-level.mm { stroke-dasharray: 2 3; stroke-width: 1.2; }
+  .qm-level.mm.pivot { stroke: var(--qm-ma20); }
+  .qm-level-tag.mm.pivot text { fill: var(--qm-ma20); }
+  .qm-level-tag.mm text { font-weight: 500; }
   .qm-marker circle { fill: var(--surface); stroke-width: 2.2; }
   .qm-marker line { stroke-width: 1; }
   .qm-marker text { font: 600 10px var(--font-mono); }

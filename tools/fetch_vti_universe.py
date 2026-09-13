@@ -553,6 +553,116 @@ SOURCES = {"yfinance": fetch_prices_yfinance, "stooq": fetch_prices_stooq}
 
 
 # --------------------------------------------------------------------------- #
+# Fundamentals
+#
+# The Minervini screen's one non-technical test: did the latest reported quarter
+# grow both EPS and sales year on year. It is the only figure in this project a
+# browser cannot derive from price bars, which is the whole reason it is fetched
+# here and shipped alongside them.
+#
+# One request per ticker (~0.3s), so callers pass only the names that already
+# pass the MA stack — a stock that is not in a Stage 2 uptrend cannot be a long
+# setup whatever its earnings did.
+# --------------------------------------------------------------------------- #
+
+REVENUE_ROWS = ("Total Revenue", "TotalRevenue", "Operating Revenue")
+EPS_ROWS = ("Diluted EPS", "DilutedEPS", "Basic EPS", "BasicEPS")
+
+
+def _row_value(frame, names: Sequence[str], column) -> float | None:
+    for name in names:
+        if name in frame.index:
+            try:
+                value = float(frame.loc[name, column])
+            except (TypeError, ValueError, KeyError):
+                continue
+            if value == value:                      # not NaN
+                return value
+    return None
+
+
+def _yoy(latest: float | None, prior: float | None) -> float | None:
+    """Year-on-year growth in percent, or None when it cannot be read.
+
+    A prior quarter at or below zero has no meaningful percentage growth (going
+    from -0.10 to +0.20 is not "+300%"), so it is reported as unknown rather
+    than as a number that would wrongly pass or fail the gate.
+    """
+    if latest is None or prior is None or prior <= 0:
+        return None
+    return (latest / prior - 1.0) * 100.0
+
+
+def fetch_fundamentals(
+    tickers: Sequence[str],
+    sleep: float = 0.0,
+    progress=None,
+    limit: int = 0,
+) -> dict[str, dict]:
+    """Latest-quarter YoY EPS and revenue growth, per ticker."""
+    import yfinance as yf
+
+    wanted = list(tickers)[:limit] if limit and limit > 0 else list(tickers)
+    out: dict[str, dict] = {}
+    for index, ticker in enumerate(wanted, start=1):
+        try:
+            frame = yf.Ticker(ticker).quarterly_income_stmt
+            if frame is None or frame.empty or len(frame.columns) < 5:
+                continue
+            # columns are quarter-end dates, newest first
+            cols = list(frame.columns)
+            latest_col, prior_col = cols[0], cols[4]
+            eps = _yoy(_row_value(frame, EPS_ROWS, latest_col),
+                       _row_value(frame, EPS_ROWS, prior_col))
+            sales = _yoy(_row_value(frame, REVENUE_ROWS, latest_col),
+                         _row_value(frame, REVENUE_ROWS, prior_col))
+            if eps is None and sales is None:
+                continue
+            out[ticker] = {
+                "eps_yoy": eps,
+                "sales_yoy": sales,
+                "quarter": str(latest_col)[:10],
+            }
+        except Exception as exc:  # noqa: BLE001
+            LOG.debug("%s: fundamentals unavailable (%s)", ticker, exc)
+        if index % 25 == 0:
+            LOG.info("fundamentals %d/%d", index, len(wanted))
+        _tick(progress, "fundamentals", index, len(wanted), f"{len(out)} with earnings data")
+        if sleep:
+            time.sleep(sleep)
+    LOG.info("fundamentals: %d/%d tickers returned usable quarters", len(out), len(wanted))
+    return out
+
+
+def ma_stack_symbols(rows: Iterable[Bar], exclude: Sequence[str] = ()) -> list[str]:
+    """Symbols whose last close sits above a rising 50 > 150 > 200 MA stack.
+
+    The cheap prescreen from the source implementation: only these can be long
+    setups, so only these are worth a fundamentals round-trip. ``exclude`` drops
+    the index proxy — asking an index ETF for its quarterly EPS spends a request
+    to learn nothing.
+    """
+    skip = {s.upper() for s in exclude if s}
+    closes: dict[str, list[float]] = {}
+    for bar in rows:
+        if bar.symbol.upper() in skip:
+            continue
+        closes.setdefault(bar.symbol, []).append(bar.close)
+
+    def avg(values: list[float], n: int) -> float | None:
+        return sum(values[-n:]) / n if len(values) >= n else None
+
+    out = []
+    for symbol, series in closes.items():
+        s50, s150, s200 = avg(series, 50), avg(series, 150), avg(series, 200)
+        if None in (s50, s150, s200):
+            continue
+        if series[-1] > s50 > s150 > s200:
+            out.append(symbol)
+    return sorted(out)
+
+
+# --------------------------------------------------------------------------- #
 # Validation and output
 # --------------------------------------------------------------------------- #
 
@@ -616,7 +726,8 @@ def screen_filters(
     return None
 
 
-def write_csv(path: Path, rows: Iterable[Bar], meta: dict[str, Holding] | None = None) -> int:
+def write_csv(path: Path, rows: Iterable[Bar], meta: dict[str, Holding] | None = None,
+              fundamentals: dict[str, dict] | None = None) -> int:
     """Write the long-format CSV the screener imports.
 
     Market cap and company name are written once per symbol, on its first row,
@@ -624,16 +735,18 @@ def write_csv(path: Path, rows: Iterable[Bar], meta: dict[str, Holding] | None =
     and repeating them on every bar would add megabytes for nothing.
     """
     meta = meta or {}
+    fundamentals = fundamentals or {}
     path.parent.mkdir(parents=True, exist_ok=True)
     written = 0
     seen: set[str] = set()
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["symbol", "date", "open", "high", "low", "close", "volume",
-                         "market_cap", "name"])
+                         "market_cap", "name", "eps_yoy", "sales_yoy", "fund_quarter"])
         for bar in rows:
             first = bar.symbol not in seen
             holding = meta.get(bar.symbol) if first else None
+            fund = fundamentals.get(bar.symbol) if first else None
             seen.add(bar.symbol)
             writer.writerow([
                 bar.symbol, bar.date,
@@ -641,6 +754,9 @@ def write_csv(path: Path, rows: Iterable[Bar], meta: dict[str, Holding] | None =
                 int(round(bar.volume)),
                 f"{holding.market_cap:.0f}" if holding and holding.market_cap else "",
                 holding.name if holding and holding.name != bar.symbol else "",
+                f"{fund['eps_yoy']:.2f}" if fund and fund.get("eps_yoy") is not None else "",
+                f"{fund['sales_yoy']:.2f}" if fund and fund.get("sales_yoy") is not None else "",
+                fund.get("quarter", "") if fund else "",
             ])
             written += 1
     return written
@@ -712,6 +828,12 @@ def build_parser() -> argparse.ArgumentParser:
                          help="drop symbols with fewer clean bars (default: 130)")
     quality.add_argument("--min-price", type=float, default=5.0,
                          help="drop symbols closing below this (default: 5)")
+    quality.add_argument("--fundamentals", action="store_true",
+                         help="also fetch latest-quarter EPS/sales growth for names that pass the "
+                              "MA stack (one request per ticker, ~0.3s each). Needed for the "
+                              "Minervini screen's c6 test; without it that test is left unassessed.")
+    quality.add_argument("--fundamentals-limit", type=int, default=600,
+                         help="cap the number of fundamentals requests (default 600)")
     quality.add_argument("--min-turnover", type=float, default=5.0,
                          help="drop symbols under this 20-day average turnover, $M "
                               "(default: 5)")
@@ -969,6 +1091,7 @@ def build_meta(args: argparse.Namespace, result: BuildResult) -> dict:
             "min_turnover_musd": args.min_turnover,
         },
         "index_symbol": result.universe.index_symbol or None,
+        "fundamentals": 0,          # filled in by whoever fetched them
         "dropped": result.dropped,
     }
 
@@ -1036,7 +1159,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     rows, dropped, kept, source = result.rows, result.dropped, result.kept, universe.source
-    written = write_csv(args.out, rows, {h.ticker: h for h in holdings})
+    fundamentals = {}
+    if getattr(args, "fundamentals", False):
+        candidates = ma_stack_symbols(rows, exclude=[universe.index_symbol])
+        LOG.info("fundamentals: %d of %d symbols pass the MA stack and are worth the round-trip",
+                 len(candidates), kept)
+        fundamentals = fetch_fundamentals(candidates, limit=args.fundamentals_limit)
+    written = write_csv(args.out, rows, {h.ticker: h for h in holdings}, fundamentals)
     size_mb = args.out.stat().st_size / 1e6
     span = sorted({b.date for b in rows})
     meta = build_meta(args, result)

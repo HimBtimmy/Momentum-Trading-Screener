@@ -218,6 +218,12 @@ pre.cmd code { background: none; padding: 0; font-size: 12.5px; line-height: 1.7
 .pill.triggered { background: var(--status-good); color: #fff; }
 .pill.ready { background: var(--accent-soft); color: var(--accent); }
 .pill.extended, .pill.watch { background: var(--surface-3); }
+.pill.mm-a { background: var(--status-good); color: #fff; }
+.pill.mm-b { background: var(--accent-soft); color: var(--accent); }
+.pill.mm-short-a { background: var(--qm-dn); color: #fff; }
+.pill.mm-short-b { background: color-mix(in srgb, var(--qm-dn) 14%, transparent); color: var(--qm-dn); }
+.pill.mm-none { background: var(--surface-3); color: var(--ink-muted); }
+.grade.gD { color: var(--ink-muted); border-color: var(--rule); background: var(--surface-2); }
 .score { font: 500 11px/1 var(--font-mono); color: var(--ink-muted); }
 .score b { font-size: 15px; color: var(--ink-primary); }
 .metrics {
@@ -333,6 +339,67 @@ ul.ttlist .lb { color: var(--ink-primary); }
 ul.ttlist .dt { grid-column: 2; font: 400 11.5px/1.4 var(--font-mono); color: var(--ink-muted); }
 .card.rejected { border-left-color: var(--status-critical); opacity: 1; }
 
+/* ---- two screeners on one card ---------------------------------------- */
+.seg.screener button { letter-spacing: .08em; }
+.seg.screener button span { opacity: .75; font-weight: 500; }
+.card.both { border-left-width: 4px; border-left-color: var(--status-good); }
+.bothtag {
+  font: 600 9.5px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase;
+  padding: 6px 8px; border-radius: 2px; background: var(--status-good); color: #fff;
+}
+section.strat { border-top: 1px solid var(--rule); }
+section.strat.mm { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.strat-head {
+  display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between;
+  padding: 13px 18px 9px;
+}
+.strat-head h4 { font: 600 1.02rem/1.2 var(--font-display); letter-spacing: -.01em; color: var(--ink-primary); }
+.strat-head h4 .sub {
+  font: 500 9.5px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-muted); margin-left: 7px;
+}
+.strat-head .yes, .strat-head .no {
+  font: 600 9.5px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase;
+}
+.strat-head .yes { color: var(--status-good); }
+.strat-head .no { color: var(--ink-muted); }
+section.strat .why { padding: 2px 18px 4px; }
+section.strat .why p { margin: 0; color: var(--ink-secondary); font-size: 14.5px; max-width: 95ch; }
+section.strat h5 {
+  font: 600 10px/1.3 var(--font-mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-muted); margin: 12px 0 7px;
+}
+section.strat h5.sub-h { margin-top: 16px; }
+.grade.mm { border-style: dashed; }
+dl.facts { margin: 12px 0 0; }
+dl.facts .row {
+  display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  padding: 5px 0; border-bottom: 1px dotted var(--rule-faint);
+}
+dl.facts dt { font: 500 10.5px/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-muted); }
+dl.facts dd { margin: 0; font: 500 12.5px/1.3 var(--font-mono); color: var(--ink-secondary); text-align: right; }
+ul.checks.tight li { padding: 4px 0; font-size: 13px; }
+details.trendtpl { margin-top: 18px; }
+details.trendtpl summary { cursor: pointer; list-style: none; }
+details.trendtpl summary::-webkit-details-marker { display: none; }
+details.trendtpl summary h4 { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+details.trendtpl summary::before { content: '▸ '; color: var(--ink-muted); font-size: 11px; }
+details.trendtpl[open] summary::before { content: '▾ '; }
+
+/* ---- which levels the chart draws -------------------------------------- */
+.pivotpick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 12px 18px 0; }
+.pivotpick .pp-label {
+  font: 500 9.5px/1 var(--font-mono); letter-spacing: .13em; text-transform: uppercase;
+  color: var(--ink-muted); margin-right: 4px;
+}
+button.pp {
+  appearance: none; cursor: pointer; border: 1px solid var(--rule); background: var(--surface-2);
+  color: var(--ink-muted); border-radius: 2px; padding: 5px 8px;
+  font: 500 10px/1 var(--font-mono); letter-spacing: .07em; text-transform: uppercase;
+}
+button.pp:hover { color: var(--ink-primary); border-color: var(--ink-secondary); }
+button.pp.on { background: var(--ink-primary); border-color: var(--ink-primary); color: var(--paper); }
+
 /* ---- table filters and slicers ---------------------------------------- */
 .tablefilters {
   display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; margin-bottom: 14px;
@@ -373,6 +440,7 @@ th.sorted .sortbtn .arrow { opacity: 1; }
 .sl-body { display: grid; gap: 2px; }
 .sl-body input[type="range"] { width: 100%; accent-color: var(--accent); height: 18px; margin: 0; }
 .sl-val { font: 600 12px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-primary); }
+.hint-inline { font-size: 12px; color: var(--ink-muted); }
 .fcount { margin-left: auto; font: 500 11px/1 var(--font-mono); color: var(--ink-muted); }
 button.symlink {
   appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
@@ -487,6 +555,8 @@ python3 tools/server.py --open</code></pre>
     <div class="checks-row">
       <label class="chk"><input type="checkbox" id="be-refresh"> Ignore today's cache</label>
       <label class="chk"><input type="checkbox" id="be-savecsv"> Also write a CSV into <code>data/</code></label>
+      <label class="chk"><input type="checkbox" id="be-fund"> Fetch earnings growth
+        <span class="hint-inline">(Minervini c6 — one request per name, slow)</span></label>
     </div>
     <div class="progress" id="be-progress" hidden>
       <div class="bar"><i id="be-bar"></i></div>
@@ -564,6 +634,11 @@ NVDA,2026-09-11,178.40,182.10,177.90,181.55,184320000"></textarea>
 
 <div class="viewbar">
   <h2>Candidates</h2>
+  <div class="seg screener" role="group" aria-label="Screener">
+    <button id="scr-kq" class="on" type="button" title="Kristjan Kullamägi's three setups">Qullamaggie</button>
+    <button id="scr-mm" type="button" title="Mark Minervini's trend template and leader breakdowns">Minervini</button>
+    <button id="scr-both" type="button" title="names both screens call tradeable">Both <span id="scr-both-n"></span></button>
+  </div>
   <label class="chk"><input type="checkbox" id="show-rejects"> Show rejects and why</label>
   <div class="seg" role="group" aria-label="View">
     <button id="view-cards" class="on" type="button">Cards</button>

@@ -1,5 +1,17 @@
 # How the screener scores a setup
 
+The app runs **two screeners over one dataset**. Bars are loaded once — demo, CSV, the
+yfinance backend, or a live API — and every symbol is put through both:
+
+| | What it asks | Sections 1–4 below |
+|---|---|---|
+| **Qullamaggie (KQ)** | Is there a tradeable flag, gap or parabolic extension *right now*? | ✓ |
+| **Minervini (MM)** | Is this a Stage 2 leader setting up, by the Trend Template? | § 5 |
+
+They agree less often than you would expect, and that is the useful part: the **Both** tab
+is the intersection, not a third screen. Section 5 documents the Minervini side; everything
+before it is Kullamägi's.
+
 Three numbers appear against every candidate, and they answer different questions:
 
 | | Range | Question it answers |
@@ -156,12 +168,155 @@ When none apply, the justification says so explicitly rather than staying silent
 
 ---
 
-## 4. Tuning
+## 5. The Minervini screen
+
+A port of Mark Minervini's Trend Template (the mechanical first stage of SEPA) and a
+short-side leader-breakdown setup, scored and graded the same way as above so the two
+verdicts on a card can be read against each other.
+
+### 5.1 The long criteria
+
+Minervini's original eight points contain four separate MA-relationship checks
+(price > 150 & 200, 150 > 200, 50 > 150 & 200, price > 50). Those are one chained
+inequality, so they collapse into c1 with identical screening behaviour.
+
+| | Criterion | Source |
+|---|---|---|
+| **c1** | Price > 50-day > 150-day > 200-day MA | Minervini 1/2/4/5 |
+| **c2** | 200-day MA rising for at least ~1 month (21 sessions) | Minervini 3 |
+| **c3** | At least 30% above the 52-week low | Minervini 6 |
+| **c4** | Within 25% of the 52-week high (intraday, not closing) | Minervini 7 |
+| **c5** | RS rating ≥ 70, IBD-weighted | Minervini 8 |
+| **c6** | Latest quarter grew **both** EPS and sales year on year | fundamentals |
+| **c7** | Accumulation: up-day volume heavier than down-day volume | quality layer |
+| **c8** | Tightness: 5-day ADR inside 14-day ADR | quality layer |
+
+**Tri-state criteria.** A test that cannot be *measured* returns unassessed rather than
+failed — c6 with no earnings data, c5 with no universe to rank against, c7 on a series with
+no down days. Unassessed tests are excluded from the pass count and never fail the gate,
+but they cap the grade at **A**: a name that could not be verified is not a textbook one.
+
+**RS is IBD-weighted here**, unlike the Qullamaggie side: `2 × 3-month + 6-month + 9-month +
+12-month`, percentile-ranked across the screened universe onto 1–99. Double-weighting the
+latest quarter is what makes it reward acceleration rather than a year-old move. Below 20
+liquid symbols the ranking is suppressed entirely — a percentile of three names is noise,
+and worse, the two screens would disagree about which end of the scale a lone symbol sits at.
+
+### 5.2 Tiers, and what "eligible" means
+
+| Tier | Condition | Meaning |
+|---|---|---|
+| **A** | c1–c5 hold, no quality test *failed*, price > 20-day MA, volume dried up (3-day/50-day < 0.9) | tradeable |
+| **B** | c1–c5 hold and price > 20-day MA | watchlist |
+| **C** | c1–c5 hold, price below the 20-day MA | radar — not setting up yet |
+| — | anything else | no template setup |
+
+**Already broken out** replaces the tier label when price is more than 0.5 × ADR above the
+pivot *and* either the first close above it was 2+ sessions ago or today's high is a 20-day
+high. An unextended close stays a setup whatever the timing: entry near the pivot is still
+valid on risk.
+
+Only **tier A, not already broken out** counts as eligible.
+
+### 5.3 Pivot, stop, and the one thing that is not ported
+
+| | Rule |
+|---|---|
+| **Pivot** | `pivot60` (default): the highest intraday high of the last 60 sessions **excluding the most recent 3**, plus one tick. `high20`: the prior 20-session high, excluding the last bar. |
+| **Entry** | the pivot itself — a buy-stop one tick above the base high |
+| **Stop** | `pivot × (1 − 1.5 × ADR%)`, the 1.5 × ADR the source implementation settled on |
+| **Volume** | the breakout bar must trade ≥ 1.5 × the 50-day average |
+| **Targets** | **Kullamägi's, not a fixed 2.5R** |
+
+The three bars excluded from the pivot window matter: a swing high needs subsequent
+sessions to be confirmed, and a spike printed yesterday is a breakout in progress rather
+than pivot material.
+
+**Why the target is not ported.** The source implementation exits at a fixed 2.5R. This app
+takes profits on Kullamägi's schedule instead — a third to a half into strength after 3–5
+sessions, stop to breakeven, trail the rest on the 10- or 20-day MA, out on the first close
+below. A fixed target and a trailed runner are different strategies with different return
+distributions; mixing them would mean neither set of numbers describes what you would
+actually get. The *entry and risk* are Minervini's; the *exit* is Kullamägi's, and the card
+says so.
+
+### 5.4 The short side
+
+A former leader in a Stage 2 → Stage 3 top. The first crack below the 50-day MA is rarely
+the trade: these stocks wedge back up on light volume, get rejected at a falling MA, and
+break again.
+
+| | Criterion |
+|---|---|
+| **s1** | Latest close below the 50-day MA |
+| **s2** | 5- and 10-day MAs both falling |
+| **s4** | Bearish stack: 5MA < 10MA < 20MA |
+| **s5** | It *was* a leader: RS ≥ 90 **as of the breakdown** |
+| **s9** | A strict wedge rejection fired within 10 sessions |
+| **s10** | Rally volume lighter than decline volume |
+
+Triggers are tiered: **A** = a swing high dominating 3 bars each side that reaches a falling
+10/50-day MA and closes back below it; **B** = a 1-bar version; **C** = broken down with no
+rejection yet. Only tier A gates a signal. Entry is the close of the trigger bar, stop 1.5%
+above whatever rejected price — the 50-day MA on a first breakdown, the wedge high on a
+rejection. Covering is into the 10- and 20-day MAs, again Kullamägi's rather than a target.
+
+**s5 needs history the default fetch does not have.** RS at the breakdown is ranked across
+the universe, and that needs bars *before* the break: the floor here is six months, where
+the source implementation asks for a full year. With 252 sessions loaded the reading is
+often unavailable and the test falls back to current RS — which a broken-down leader no
+longer has, so the short side rarely fires. Load ~504 sessions if you want it to work
+properly.
+
+### 5.5 The Minervini score
+
+45 template + 15 relative strength + 40 setup quality:
+
+| Component | Points | Full marks at |
+|---|---|---|
+| c1 (the prerequisite) | 13 | passes |
+| c2–c5 | 8 each | passes |
+| RS rating | 15 | RS 99 (0 at RS ≤ 50) |
+| Distance to the pivot | 15 | within 1 ADR (0 at 4 ADRs; 6 if already extended) |
+| Range contraction | 10 | 5-day ADR 40% inside the 14-day |
+| Volume dry-up | 8 | 3-day volume at half the 50-day |
+| Accumulation | 7 | up-day volume 1.5× down-day |
+
+The last four — the "setup quality" half — are **scaled by the fraction of c1–c5 that
+holds**, so a tight, quiet base on a stock that is not in a Stage 2 uptrend cannot out-score
+one that is. Unmeasurable criteria score as neutral (half marks) rather than zero.
+
+The short score is 45 for the six s-criteria, 20 for RS at the breakdown, 20 for the trigger
+tier (A 20 / B 12 / C 5), and 15 for the distribution ratio.
+
+### 5.6 The Minervini grade
+
+| Grade | Condition |
+|---|---|
+| **A+** | tier A, score ≥ 72, ≤ 1 hard caveat, **and every criterion measured** |
+| **A** | tier A, score ≥ 62, ≤ 3 hard caveats |
+| **B** | tier A or B that missed the above |
+| **C** | tier C, or a tier-A name already broken out |
+| **D** | fails the template |
+
+Hard caveats exclude the unmeasured ones — they are already accounted for by the A+ bar
+requiring a complete reading.
+
+---
+
+## 6. Tuning
 
 Everything above reads from `QM.DEFAULTS` in `app/engine.js`; the UI exposes the gates that
 matter most (risk, position cap, ADR floor, turnover floor, price floor, market-cap band)
 and passes them straight through to `QM.screen()`. Changing a weight changes only the
-ranking; changing a threshold changes what qualifies.
+ranking; changing a threshold changes what qualifies. The Minervini side has its own keys —
+`mmMinRs`, `mmMinRsShort`, `mmPivotMode`, `mmPivotLookback`, `mmStopAdrMult`,
+`mmVolumeDryUpMax`, `mmBreakoutVolMult`, `mmTriggerWindow`.
+
+**One pass, two verdicts.** Both screens read the same `computeFeatures()` output and the
+same RS ranking pass; the Minervini side adds one extra percentile sort (the IBD weighting)
+and one more (RS at each name's breakdown). Screening twice would double the work and let
+the two verdicts drift apart on the same bars.
 
 **On "let an LLM judge it".** The grading here is deterministic on purpose: it runs offline
 over thousands of symbols in the browser, gives the same answer twice, and can be audited

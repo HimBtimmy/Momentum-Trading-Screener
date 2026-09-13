@@ -36,6 +36,9 @@
     indexBars: null,
     asOf: null,
     view: 'cards',
+    screener: 'kq',                     // kq | mm | both  — which screen lists
+    pivotView: 'auto',                  // auto | kq | mm | both — chart levels
+    mmPivotMode: 'pivot60',             // pivot60 | high20
     showRejects: false,
     detail: null,                       // symbol shown in the detail overlay
     filters: { setup: '', statuses: [], eligibility: 'all',
@@ -69,7 +72,7 @@
   function activeUniverse() {
     return state.universe.map(function (u) {
       return { symbol: u.symbol, name: u.name, sector: u.sector, marketCap: u.marketCap,
-               bars: truncate(u.bars, state.asOf) };
+               fundamentals: u.fundamentals || null, bars: truncate(u.bars, state.asOf) };
     });
   }
 
@@ -113,15 +116,29 @@
       wireTableFilters();
       return;
     }
-    var eligible = res.results.filter(function (r) { return r.eligible; });
-    var rejected = res.results.filter(function (r) { return !r.eligible && r.f; });
+    var eligible = res.results.filter(passesScreener);
+    var rejected = res.results.filter(function (r) { return !passesScreener(r) && r.f; });
     host.innerHTML = (eligible.length
       ? eligible.map(function (r) { return renderCard(r); }).join('')
-      : '<p class="empty">Nothing qualifies on this date. That is the normal state of the screen ' +
-        'most days — the setups cluster.</p>') +
+      : '<p class="empty">' + esc(emptyMessage(res)) + '</p>') +
       (state.showRejects ? renderRejects(rejected) : '');
     attachCharts();
     wireSymbolLinks();
+    wirePivotPicks();
+  }
+
+  function emptyMessage(res) {
+    if (state.screener === 'both') {
+      return 'Nothing is eligible on both screens today. That is the usual answer: his screen wants a flag ' +
+        'about to break, the trend template wants a Stage 2 leader with the quality tests behind it, and the ' +
+        'overlap is genuinely rare — ' + (res.counts.eligible || 0) + ' qualify on his screen and ' +
+        (res.counts.mmEligible || 0) + ' on the template.';
+    }
+    if (state.screener === 'mm') {
+      return 'No name reaches tier A on the trend template today. Tier B and C candidates are in the table — ' +
+        'switch to the table view, or tick “Show rejects”.';
+    }
+    return 'Nothing qualifies on this date. That is the normal state of the screen most days — the setups cluster.';
   }
 
   function renderRejects(rejected) {
@@ -153,13 +170,17 @@
   }
 
   function renderSummary(res) {
+    ['kq', 'mm', 'both'].forEach(function (k) { $('#scr-' + k).classList.toggle('on', k === state.screener); });
+    $('#scr-both-n').textContent = res && res.counts && res.counts.both ? '· ' + res.counts.both : '';
     var el = $('#summary');
     if (!res) { el.hidden = true; return; }
     el.hidden = false;
     var c = res.counts;
     var tiles = [
       ['Screened', c.universe],
-      ['Eligible', c.eligible],
+      ['Qullamaggie', c.eligible],
+      ['Minervini', c.mmEligible || 0],
+      ['Both screens', c.both || 0],
       ['Breakouts', c.breakout || 0],
       ['Episodic pivots', c.ep || 0],
       ['Parabolic shorts', c.parabolic || 0],
@@ -182,12 +203,126 @@
     building: 'Building', extended: 'Extended', fresh: 'Fresh gap', watch: 'Watch only'
   };
 
+  var MM_STATUS = {
+    'mm-a': 'Tier A · tradeable', 'mm-b': 'Tier B · watchlist', 'mm-c': 'Tier C · radar',
+    'mm-extended': 'Already broken out', 'mm-short-a': 'Short A · wedge rejection',
+    'mm-short-b': 'Short B · shallow rejection', 'mm-short-c': 'Short C · first breakdown',
+    'mm-none': 'No template setup'
+  };
+  var SCREENERS = { kq: 'Qullamaggie', mm: 'Minervini', both: 'Both' };
+
+  /* Does this record belong in the current list? */
+  function passesScreener(r) {
+    if (state.screener === 'mm') return !!r.mmEligible;
+    if (state.screener === 'both') return !!r.bothEligible;
+    return !!r.eligible;
+  }
+
+  function gradeChip(grade, label, title, cls) {
+    if (!grade) return '';
+    return '<span class="grade ' + (cls || '') + ' g' + grade.replace('+', 'plus') + '" title="' +
+      esc(title) + '">' + esc(label) + '</span>';
+  }
+
+  function checkList(items, cls) {
+    return '<ul class="checks ' + (cls || '') + '">' + items.map(function (c) {
+      var state_ = c.pass === null || c.pass === undefined ? 'na' : c.pass ? 'ok' : 'no';
+      var mark = state_ === 'na' ? '–' : state_ === 'ok' ? '✓' : '✕';
+      return '<li class="' + state_ + '"><span class="mk">' + mark + '</span>' +
+        '<span class="lb">' + esc(c.label) + '</span>' +
+        (c.detail ? '<span class="dt">' + esc(c.detail) + '</span>' : '') + '</li>';
+    }).join('') + '</ul>';
+  }
+
+  function planRowsHtml(rows) {
+    return '<dl>' + rows.map(function (x) {
+      return '<div class="row ' + (x[2] || '') + '"><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+
+  function sizeHtml(size) {
+    if (!size) return '';
+    return '<p class="size">' + esc(size.shares.toLocaleString() + ' shares · ' + QM.money(size.notional) +
+      ' · ' + f1(size.positionPct) + '% of equity · ' + QM.money(size.dollarsAtRisk) + ' at risk (' +
+      f2(size.riskOfEquityPct) + '% of account)') + '</p>' +
+      (size.notes && size.notes.length ? '<p class="notes">' + esc(size.notes.join('; ')) + '</p>' : '');
+  }
+
+  /* ---- the Minervini half of a card ------------------------------------- */
+  function mmSection(r) {
+    var mm = r.mm;
+    if (!mm) return '';
+    var q = mm.quality, p = mm.plan, m = r.f;
+    var head =
+      '<div class="strat-head">' +
+        '<h4>Minervini <span class="sub">' + (mm.side === 'short' ? 'leader breakdown' : 'trend template') + '</span></h4>' +
+        '<div class="tags">' +
+          gradeChip(mm.grade, q.label, 'Minervini quality grade') +
+          '<span class="pill ' + esc(mm.status) + '">' + esc(MM_STATUS[mm.status] || mm.status) + '</span>' +
+          '<span class="score" title="Minervini composite score"><b>' + Math.round(mm.score) + '</b><i>/100</i></span>' +
+          (mm.eligible ? '<span class="yes">eligible</span>' : '<span class="no">not eligible</span>') +
+        '</div>' +
+      '</div>';
+
+    var facts = [];
+    if (mm.side === 'long' && mm.pivot) {
+      facts.push(['Base high', '$' + f2(mm.pivot.baseHigh) + ' · ' + mm.pivot.date]);
+      facts.push(['Pivot mode', mm.pivot.mode + ' (' + mm.pivot.window + ')']);
+      if (isFinite(mm.adrToPivot)) facts.push(['Distance to pivot', f2(mm.adrToPivot) + '× ADR']);
+      if (p && isFinite(p.requiredVolume)) facts.push(['Breakout volume needed', Math.round(p.requiredVolume).toLocaleString()]);
+      if (mm.vcpCandidate) facts.push(['Shape', mm.eightWeekHoldCandidate ? 'VCP · 8-week-hold pool' : 'VCP candidate']);
+    } else if (mm.side === 'short') {
+      if (mm.firstBreakDate) facts.push(['First 50MA break', mm.firstBreakDate + ' · ' + mm.daysSinceFirstBreak + ' sessions ago']);
+      if (mm.trigger) facts.push(['Trigger', mm.trigger.kind.toLowerCase().replace('_', ' ') + ' at the ' + mm.trigger.resistName]);
+      if (isFinite(mm.volRatio)) facts.push(['Rally / decline volume', f2(mm.volRatio) + '×']);
+      if (isFinite(mm.rsAtBreak)) facts.push(['RS at the breakdown', String(mm.rsAtBreak)]);
+    }
+
+    var planHtml = '';
+    if (p) {
+      var adrMult = Math.abs(p.riskPct) / m.adr;
+      planHtml =
+        '<div class="plan"><h5>' + (mm.side === 'short' ? 'Short plan' : 'Trade plan') + '</h5>' +
+        planRowsHtml([
+          [mm.side === 'short' ? 'Entry' : 'Pivot entry', '$' + f2(p.entry), 'accent'],
+          ['Hard stop', '$' + f2(p.stop), 'bad'],
+          ['Risk', pctTxt(Math.abs(p.riskPct), 2) + ' · ' + f2(adrMult) + '× ADR',
+            adrMult <= 1.5 ? 'good' : adrMult <= 2 ? 'warn' : 'bad'],
+          ['3R target', '$' + f2(p.targets.r3), ''],
+          ['5R target', '$' + f2(p.targets.r5), ''],
+          ['Trail on', String(p.targets.trailMa), '']
+        ]) +
+        sizeHtml(p.size) +
+        '<p class="rule">' + esc(p.entryRule) + ' ' + esc(p.stopRule) + '</p>' +
+        '<p class="rule mgmt">' + esc(p.management) + '</p>' +
+        (facts.length ? '<dl class="facts">' + facts.map(function (x) {
+          return '<div class="row"><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
+        }).join('') + '</dl>' : '') +
+        '</div>';
+    } else {
+      planHtml = '<div class="plan"><h5>No plan</h5><p class="rule">' +
+        esc(mm.side === 'short' ? 'No breakdown trigger has fired, so there is nothing to short here.'
+                                : 'No base high could be located in this window.') + '</p></div>';
+    }
+
+    var conf = mm.side === 'short' && mm.confirmations
+      ? '<h5 class="sub-h">Confirmations (not gating)</h5>' + checkList(mm.confirmations, 'tight') : '';
+
+    return '<section class="strat mm">' + head +
+      '<div class="why"><p>' + esc(mm.justification || '') + '</p></div>' +
+      '<div class="plan-grid">' + planHtml +
+        '<div class="criteria"><h5>' + (mm.side === 'short' ? 'Short criteria' : 'Trend template') + '</h5>' +
+        checkList(mm.items) + conf + '</div>' +
+      '</div></section>';
+  }
+
   function renderCard(r, opts) {
     opts = opts || {};
     var s = setupOf(r);
     if (!s || !s.plan) {
       return '<article class="card"><header class="card-head"><div class="id"><h3>' + esc(r.symbol) +
-        '</h3><span class="nm">' + esc(r.skipped || 'no qualifying setup to show') + '</span></div></header></article>';
+        '</h3><span class="nm">' + esc(r.skipped || 'no qualifying setup to show') + '</span></div></header>' +
+        (r.mm ? mmSection(r) : '') + '</article>';
     }
     var p = s.plan, m = r.f, q = r.quality;
     var side = p.side;
@@ -214,15 +349,15 @@
     }).join('');
 
     var tt = q && q.trendTemplate ? q.trendTemplate : null;
-    var ttHtml = tt ? '<div class="trendtpl"><h4>Minervini trend template ' +
+    var ttHtml = tt ? '<details class="trendtpl"><summary><h4>Trend-template overlay ' +
       '<span class="ttscore ' + (tt.passed >= 7 ? 'good' : tt.passed >= 5 ? 'mid' : 'bad') + '">' +
-      tt.passed + '/' + tt.total + '</span></h4><ul class="ttlist">' +
+      tt.passed + '/' + tt.total + '</span></h4></summary><ul class="ttlist">' +
       tt.items.map(function (x) {
         var cls = x.pass === null ? 'na' : x.pass ? 'ok' : 'no';
         var mark = x.pass === null ? '–' : x.pass ? '✓' : '✕';
         return '<li class="' + cls + '"><span class="mk">' + mark + '</span>' +
           '<span class="lb">' + esc(x.label) + '</span><span class="dt">' + esc(x.detail) + '</span></li>';
-      }).join('') + '</ul></div>' : '';
+      }).join('') + '</ul></details>' : '';
 
     var planRows = [
       ['Entry trigger', '$' + f2(p.entry), 'accent'],
@@ -246,46 +381,76 @@
       (failing.length ? esc(failing.join(' · ')) : esc(s.reason || 'no qualifying setup')) +
       '<span class="hyp">The plan below is hypothetical — shown so you can see what the screen measured.</span></div>';
 
-    return '<article class="card ' + s.type + ' ' + (s.status || '') + (r.eligible ? '' : ' rejected') + '">' +
+    var mm = r.mm;
+    var both = r.bothEligible;
+    var pivotToggle =
+      '<div class="pivotpick" role="group" aria-label="Levels drawn on the chart">' +
+        '<span class="pp-label">Levels</span>' +
+        ['kq', 'mm', 'both'].map(function (v) {
+          return '<button type="button" class="pp' + (pivotMode() === v ? ' on' : '') +
+            '" data-pivot="' + v + '" data-symbol="' + esc(r.symbol) + '">' +
+            (v === 'kq' ? 'Qullamaggie' : v === 'mm' ? 'Minervini' : 'Both') + '</button>';
+        }).join('') +
+      '</div>';
+
+    return '<article class="card ' + s.type + ' ' + (s.status || '') +
+        (r.eligible ? '' : ' rejected') + (both ? ' both' : '') + '">' +
       '<header class="card-head">' +
         '<div class="id">' +
           '<h3>' + esc(r.symbol) + '</h3>' +
           '<span class="nm">' + esc(r.name || '') + (r.sector ? ' · ' + esc(r.sector) : '') + '</span>' +
         '</div>' +
         '<div class="tags">' +
-          (q ? '<span class="grade g' + q.grade.replace('+', 'plus') + '" title="setup quality">' +
-               esc(q.label) + '</span>' : '') +
+          (both ? '<span class="bothtag" title="eligible on both screens">both screens</span>' : '') +
+          (q ? gradeChip(q.grade, 'KQ ' + q.grade, 'Qullamaggie quality: ' + q.label) : '') +
+          (mm ? gradeChip(mm.grade, 'MM ' + mm.grade, 'Minervini quality: ' + mm.quality.label, 'mm') : '') +
           '<span class="badge ' + s.type + '">' + esc(SETUP_LABEL[s.type]) + '</span>' +
-          '<span class="pill ' + (s.status || '') + '">' + esc(STATUS_TEXT[s.status] || s.status || '') + '</span>' +
-          '<span class="score" title="composite setup score"><b>' + Math.round(s.score) + '</b><i>/100</i></span>' +
         '</div>' +
       '</header>' +
       banner +
       '<div class="metrics">' + metrics.map(function (x) {
         return '<div class="m"><span class="k">' + esc(x[0]) + '</span><span class="v">' + esc(x[1]) + '</span></div>';
       }).join('') + '</div>' +
+      pivotToggle +
       '<div class="chart" id="' + chartId + '" data-symbol="' + esc(r.symbol) + '"></div>' +
-      '<div class="why"><h4>Why this one qualifies</h4><p>' + esc(r.justification || '') + '</p></div>' +
-      '<div class="plan-grid">' +
-        '<div class="plan"><h4>' + (side === 'short' ? 'Short plan' : 'Trade plan') + '</h4>' +
-          '<dl>' + planRows.map(function (x) {
-            return '<div class="row ' + x[2] + '"><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
-          }).join('') + '</dl>' +
-          (sizeLine ? '<p class="size">' + esc(sizeLine) + '</p>' : '') +
-          (size && size.notes.length ? '<p class="notes">' + esc(size.notes.join('; ')) + '</p>' : '') +
-          '<p class="rule">' + esc(p.entryRule) + ' ' + esc(p.stopRule) + '</p>' +
-          (p.intradayNote ? '<p class="rule">' + esc(p.intradayNote) + '</p>' : '') +
-          '<p class="rule mgmt">' + esc(p.management) + '</p>' +
+      '<section class="strat kq">' +
+        '<div class="strat-head"><h4>Qullamaggie <span class="sub">' +
+          esc((SETUP_LABEL[s.type] || '').toLowerCase()) + '</span></h4>' +
+          '<div class="tags">' +
+            (q ? gradeChip(q.grade, q.label, 'Qullamaggie quality grade') : '') +
+            '<span class="pill ' + (s.status || '') + '">' + esc(STATUS_TEXT[s.status] || s.status || '') + '</span>' +
+            '<span class="score" title="composite setup score"><b>' + Math.round(s.score) + '</b><i>/100</i></span>' +
+            (r.eligible ? '<span class="yes">eligible</span>' : '<span class="no">not eligible</span>') +
+          '</div>' +
         '</div>' +
-        '<div class="criteria"><h4>Criteria</h4><ul class="checks">' + checks + '</ul>' + ttHtml + '</div>' +
-      '</div>' +
+        '<div class="why"><p>' + esc(r.justification || '') + '</p></div>' +
+        '<div class="plan-grid">' +
+          '<div class="plan"><h5>' + (side === 'short' ? 'Short plan' : 'Trade plan') + '</h5>' +
+            planRowsHtml(planRows) +
+            (sizeLine ? '<p class="size">' + esc(sizeLine) + '</p>' : '') +
+            (size && size.notes.length ? '<p class="notes">' + esc(size.notes.join('; ')) + '</p>' : '') +
+            '<p class="rule">' + esc(p.entryRule) + ' ' + esc(p.stopRule) + '</p>' +
+            (p.intradayNote ? '<p class="rule">' + esc(p.intradayNote) + '</p>' : '') +
+            '<p class="rule mgmt">' + esc(p.management) + '</p>' +
+          '</div>' +
+          '<div class="criteria"><h5>Criteria</h5><ul class="checks">' + checks + '</ul>' + ttHtml + '</div>' +
+        '</div>' +
+      '</section>' +
+      mmSection(r) +
     '</article>';
+  }
+
+  /* Which levels the chart draws. 'auto' follows the screener being listed, so
+   * the Minervini view opens on Minervini levels without a second click. */
+  function pivotMode() {
+    if (state.pivotView !== 'auto') return state.pivotView;
+    return state.screener === 'mm' ? 'mm' : state.screener === 'both' ? 'both' : 'kq';
   }
 
   /* ---------------------------------------------------------- table view */
 
   var STATUS_ORDER = ['triggered', 'triggered-lowvol', 'ready', 'fresh', 'watch', 'building', 'extended'];
-  var GRADE_RANK = { 'A+': 4, 'A': 3, 'B': 2, 'C': 1 };
+  var GRADE_RANK = { 'A+': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 };
 
   /* The four sortable columns.  Each accessor returns a number, or null when
    * the value does not exist for that row — nulls sink to the bottom in both
@@ -294,7 +459,10 @@
     grade: function (r) { return r.quality ? (GRADE_RANK[r.quality.grade] || 0) : null; },
     score: function (r) { var s = setupOf(r); return s ? Math.round(s.score || 0) : null; },
     rs:    function (r) { return r.rank && isFinite(r.rank.rsRating) ? r.rank.rsRating : null; },
-    cap:   function (r) { return isFinite(r.marketCap) && r.marketCap > 0 ? r.marketCap : null; }
+    cap:   function (r) { return isFinite(r.marketCap) && r.marketCap > 0 ? r.marketCap : null; },
+    mmgrade: function (r) { return r.mm ? (GRADE_RANK[r.mm.grade] || 0) : null; },
+    mmscore: function (r) { return r.mm ? Math.round(r.mm.score || 0) : null; },
+    mmrs: function (r) { return r.mm && isFinite(r.mm.rsRating) ? r.mm.rsRating : null; }
   };
 
   function visibleRows() {
@@ -305,8 +473,8 @@
       if (!r.f) return false;
       var s = setupOf(r);
       if (!s) return false;
-      if (f.eligibility === 'eligible' && !r.eligible) return false;
-      if (f.eligibility === 'rejected' && r.eligible) return false;
+      if (f.eligibility === 'eligible' && !passesScreener(r)) return false;
+      if (f.eligibility === 'rejected' && passesScreener(r)) return false;
       if (f.setup && s.type !== f.setup) return false;
       // No status ticked means no status filter — the usual multi-select idiom.
       if (f.statuses.length && f.statuses.indexOf(s.status || '') < 0) return false;
@@ -382,59 +550,117 @@
           (state.lastRun ? state.lastRun.results.filter(function (r) { return r.f; }).length : 0) + '</span>' +
       '</div>';
 
+    var cols = columns();
     var body = rows.map(function (r) {
-      var s = setupOf(r), p = s.plan, q = r.quality;
-      var rs = r.rank && isFinite(r.rank.rsRating) ? r.rank.rsRating : null;
-      return '<tr class="' + (r.eligible ? 'elig' : 'rej') + '">' +
-        '<td class="sym"><button class="symlink" data-symbol="' + esc(r.symbol) + '" type="button">' +
-          esc(r.symbol) + '</button></td>' +
-        '<td>' + esc(SETUP_LABEL[s.type] || '') + '</td>' +
-        '<td><span class="pill sm ' + (s.status || '') + '">' + esc(STATUS_TEXT[s.status] || s.status || '') + '</span></td>' +
-        '<td>' + (r.eligible ? '<span class="yes">eligible</span>' : '<span class="no">rejected</span>') + '</td>' +
-        '<td>' + (q ? '<span class="grade sm g' + q.grade.replace('+', 'plus') + '">' + esc(q.grade) + '</span>' : '—') + '</td>' +
-        '<td class="num">' + Math.round(s.score) + '</td>' +
-        '<td class="num">' + (rs === null ? '—' : rs) + '</td>' +
-        '<td class="num">' + capTxt(r.marketCap) + '</td>' +
-        '<td class="num">' + pctTxt(r.f.adr) + '</td>' +
-        '<td class="num">' + signed(r.f.ret1d, 1) + '</td>' +
-        '<td class="num">' + signed(r.f.ret5d, 1) + '</td>' +
-        '<td class="num">' + (p ? '$' + f2(p.entry) : '—') + '</td>' +
-        '<td class="num">' + (p ? '$' + f2(p.stop) : '—') + '</td>' +
-        '<td class="num">' + (p ? pctTxt(Math.abs(p.riskPct), 2) : '—') + '</td>' +
-        '<td class="num">' + (p ? f2(Math.abs(p.riskPct) / r.f.adr) + '×' : '—') + '</td>' +
-        '<td class="num">' + (p && p.size ? p.size.shares.toLocaleString() : '—') + '</td>' +
-      '</tr>';
+      return '<tr class="' + (passesScreener(r) ? 'elig' : 'rej') + (r.bothEligible ? ' both' : '') + '">' +
+        cols.map(function (c) {
+          return '<td class="' + (c.cls || (c.num ? 'num' : '')) + '">' + c.cell(r) + '</td>';
+        }).join('') + '</tr>';
     }).join('');
 
     return controls + '<div class="tbl-wrap"><table class="results">' +
-      '<caption>Click a symbol for its chart, criteria and plan — rejected names included. ' +
+      '<caption>Click a symbol for its chart, criteria and both plans — rejected names included. ' +
       'Grade, Score, RS and Mkt cap sort.</caption>' +
       '<thead>' + renderHead() + '</thead><tbody>' +
-      (body || '<tr><td colspan="16">Nothing matches these filters.</td></tr>') +
+      (body || '<tr><td colspan="' + cols.length + '">Nothing matches these filters.</td></tr>') +
       '</tbody></table></div>';
   }
 
-  /* Column headers.  A key makes the column sortable; `num` right-aligns it. */
-  var COLUMNS = [
-    ['Symbol', '', false], ['Setup', '', false], ['Status', '', false], ['Eligible', '', false],
-    ['Grade', 'grade', false], ['Score', 'score', true], ['RS', 'rs', true], ['Mkt cap', 'cap', true],
-    ['ADR', '', true], ['1D', '', true], ['5D', '', true], ['Entry', '', true], ['Stop', '', true],
-    ['Risk', '', true], ['ADR×', '', true], ['Shares', '', true]
-  ];
+  /* Column sets. The screener you are looking at decides which plan the table
+   * shows: both side by side made a 24-column table nobody could read. */
+  function columns() {
+    var sym = { label: 'Symbol', cls: 'sym', cell: function (r) {
+      return '<button class="symlink" data-symbol="' + esc(r.symbol) + '" type="button">' + esc(r.symbol) + '</button>';
+    } };
+    var cap = { label: 'Mkt cap', sort: 'cap', num: true, cell: function (r) { return capTxt(r.marketCap); } };
+    var adr = { label: 'ADR', num: true, cell: function (r) { return pctTxt(r.f.adr); } };
+    var d1 = { label: '1D', num: true, cell: function (r) { return signed(r.f.ret1d, 1); } };
+    var d5 = { label: '5D', num: true, cell: function (r) { return signed(r.f.ret5d, 1); } };
 
+    var kq = [
+      { label: 'Setup', cell: function (r) { var x = setupOf(r); return esc(SETUP_LABEL[x.type] || ''); } },
+      { label: 'Status', cell: function (r) {
+        var x = setupOf(r);
+        return '<span class="pill sm ' + (x.status || '') + '">' + esc(STATUS_TEXT[x.status] || x.status || '') + '</span>';
+      } },
+      { label: 'Eligible', cell: function (r) {
+        return r.eligible ? '<span class="yes">eligible</span>' : '<span class="no">rejected</span>';
+      } },
+      { label: 'Grade', sort: 'grade', cell: function (r) {
+        return r.quality ? '<span class="grade sm g' + r.quality.grade.replace('+', 'plus') + '">' +
+          esc(r.quality.grade) + '</span>' : '—';
+      } },
+      { label: 'Score', sort: 'score', num: true, cell: function (r) { return String(Math.round(setupOf(r).score)); } },
+      { label: 'RS', sort: 'rs', num: true, cell: function (r) {
+        return r.rank && isFinite(r.rank.rsRating) ? String(r.rank.rsRating) : '—';
+      } }
+    ];
+    var mm = [
+      { label: 'MM side', cell: function (r) { return r.mm ? esc(r.mm.side) : '—'; } },
+      { label: 'MM status', cell: function (r) {
+        return r.mm ? '<span class="pill sm ' + esc(r.mm.status) + '">' +
+          esc(MM_STATUS[r.mm.status] || r.mm.status) + '</span>' : '—';
+      } },
+      { label: 'Eligible', cell: function (r) {
+        return r.mmEligible ? '<span class="yes">eligible</span>' : '<span class="no">rejected</span>';
+      } },
+      { label: 'MM grade', sort: 'mmgrade', cell: function (r) {
+        return r.mm ? '<span class="grade sm mm g' + r.mm.grade.replace('+', 'plus') + '">' + esc(r.mm.grade) + '</span>' : '—';
+      } },
+      { label: 'MM score', sort: 'mmscore', num: true, cell: function (r) { return r.mm ? String(Math.round(r.mm.score)) : '—'; } },
+      { label: 'RS', sort: 'mmrs', num: true, cell: function (r) {
+        return r.mm && isFinite(r.mm.rsRating) ? String(r.mm.rsRating) : '—';
+      } }
+    ];
+    var kqPlan = [
+      { label: 'Entry', num: true, cell: function (r) { var p = setupOf(r).plan; return p ? '$' + f2(p.entry) : '—'; } },
+      { label: 'Stop', num: true, cell: function (r) { var p = setupOf(r).plan; return p ? '$' + f2(p.stop) : '—'; } },
+      { label: 'Risk', num: true, cell: function (r) { var p = setupOf(r).plan; return p ? pctTxt(Math.abs(p.riskPct), 2) : '—'; } },
+      { label: 'ADR×', num: true, cell: function (r) {
+        var p = setupOf(r).plan; return p ? f2(Math.abs(p.riskPct) / r.f.adr) + '×' : '—';
+      } },
+      { label: 'Shares', num: true, cell: function (r) {
+        var p = setupOf(r).plan; return p && p.size ? p.size.shares.toLocaleString() : '—';
+      } }
+    ];
+    var mmPlan = [
+      { label: 'MM entry', num: true, cell: function (r) { return r.mm && r.mm.plan ? '$' + f2(r.mm.plan.entry) : '—'; } },
+      { label: 'MM stop', num: true, cell: function (r) { return r.mm && r.mm.plan ? '$' + f2(r.mm.plan.stop) : '—'; } },
+      { label: 'Risk', num: true, cell: function (r) {
+        return r.mm && r.mm.plan ? pctTxt(Math.abs(r.mm.plan.riskPct), 2) : '—';
+      } },
+      { label: 'To pivot', num: true, cell: function (r) {
+        return r.mm && isFinite(r.mm.adrToPivot) ? f2(r.mm.adrToPivot) + '×' : '—';
+      } },
+      { label: 'Shares', num: true, cell: function (r) {
+        return r.mm && r.mm.plan && r.mm.plan.size ? r.mm.plan.size.shares.toLocaleString() : '—';
+      } }
+    ];
+
+    if (state.screener === 'mm') return [sym].concat(mm, [cap, adr, d1, d5], mmPlan);
+    if (state.screener === 'both') {
+      return [sym,
+        { label: 'Setup', cell: function (r) { var x = setupOf(r); return esc(SETUP_LABEL[x.type] || ''); } },
+        kq[3], kq[4], mm[3], mm[4], kq[5], cap, adr,
+        kqPlan[0], kqPlan[1], mmPlan[0], mmPlan[1]];
+    }
+    return [sym].concat(kq, [cap, adr, d1, d5], kqPlan);
+  }
+
+  /* Column headers, from the same spec as the cells: a `sort` key makes the
+   * column sortable, `num` right-aligns it. */
   function renderHead() {
-    return '<tr>' + COLUMNS.map(function (c) {
-      var label = c[0], key = c[1], num = c[2];
-      var cls = num ? 'num' : '';
-      if (!key) return '<th' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(label) + '</th>';
-      var on = state.sort.key === key;
+    return '<tr>' + columns().map(function (c) {
+      var cls = c.num ? 'num' : '';
+      if (!c.sort) return '<th' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(c.label) + '</th>';
+      var on = state.sort.key === c.sort;
       var dir = on ? state.sort.dir : '';
-      var next = !on ? 'sort ' + label + ' best first'
-        : dir === 'desc' ? 'reverse the ' + label + ' sort' : 'clear the ' + label + ' sort';
+      var next = !on ? 'sort ' + c.label + ' best first'
+        : dir === 'desc' ? 'reverse the ' + c.label + ' sort' : 'clear the ' + c.label + ' sort';
       return '<th class="' + (cls ? cls + ' ' : '') + 'sortable' + (on ? ' sorted' : '') + '"' +
         ' aria-sort="' + (on ? (dir === 'asc' ? 'ascending' : 'descending') : 'none') + '">' +
-        '<button class="sortbtn" type="button" data-sort="' + key + '" title="' + esc(next) + '">' +
-        esc(label) + '<span class="arrow" aria-hidden="true">' +
+        '<button class="sortbtn" type="button" data-sort="' + c.sort + '" title="' + esc(next) + '">' +
+        esc(c.label) + '<span class="arrow" aria-hidden="true">' +
         (on ? (dir === 'asc' ? '▲' : '▼') : '↕') + '</span></button></th>';
     }).join('') + '</tr>';
   }
@@ -463,6 +689,7 @@
     host.hidden = false;
     document.body.classList.add('modal-open');
     attachCharts($('#detail-body'), 'd-');
+    wirePivotPicks($('#detail-body'));
     $('#detail-close').focus();
   }
 
@@ -570,6 +797,38 @@
     });
   }
 
+  /* The level list handed to the chart. Both screeners anchor their plans to a
+   * pivot, and they rarely agree — his is the high of a short flag, Minervini's
+   * is the high of the whole base — so which one is drawn is a choice, not a
+   * detail. */
+  function chartLevels(rec) {
+    var mode = pivotMode();
+    var s = setupOf(rec), out = [];
+    if ((mode === 'kq' || mode === 'both') && s && s.plan) {
+      if (s.type === 'breakout' && isFinite(s.pivot)) out.push({ v: s.pivot, cls: 'pivot', label: 'KQ pivot ' + f2(s.pivot) });
+      out.push({ v: s.plan.entry, cls: 'entry', label: 'KQ entry ' + f2(s.plan.entry) });
+      out.push({ v: s.plan.stop, cls: 'stop', label: 'KQ stop ' + f2(s.plan.stop) });
+    }
+    if ((mode === 'mm' || mode === 'both') && rec.mm && rec.mm.plan) {
+      var mp = rec.mm.plan;
+      if (rec.mm.pivot) out.push({ v: rec.mm.pivot.baseHigh, cls: 'mm pivot', label: 'MM base high ' + f2(rec.mm.pivot.baseHigh) });
+      out.push({ v: mp.entry, cls: 'mm entry', label: 'MM entry ' + f2(mp.entry) });
+      out.push({ v: mp.stop, cls: 'mm stop', label: 'MM stop ' + f2(mp.stop) });
+    }
+    return out;
+  }
+
+  function wirePivotPicks(root) {
+    $$('.pivotpick .pp', root || document).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state.pivotView = btn.getAttribute('data-pivot');
+        LS.set('pivotView', state.pivotView);
+        render();
+        if (state.detail) openDetail(state.detail);
+      });
+    });
+  }
+
   /* --------------------------------------------------------------- charts */
   function attachCharts(root, prefix) {
     var res = state.lastRun;
@@ -594,8 +853,8 @@
           high: base.high, low: base.low,
           label: base.len + '-session base · ' + f1(base.depthPct) + '% deep'
         } : null,
-        pivot: s.type === 'breakout' ? s.pivot : null,
-        entry: p.entry, stop: p.stop, markers: [],
+        levels: chartLevels(rec),
+        markers: [],
         width: 900, priceH: 210, volH: 46, id: 'svg-' + (prefix || '') + sym
       });
       host.insertAdjacentHTML('beforeend',
@@ -777,6 +1036,7 @@
     universe: 'Resolving the constituent list',
     prices: 'Downloading daily bars',
     validate: 'Validating bars and applying the gates',
+    fundamentals: 'Fetching quarterly EPS and sales growth',
     packing: 'Packing the dataset',
     starting: 'Starting'
   };
@@ -807,10 +1067,11 @@
       minPrice: state.settings.minPrice,
       minTurnover: state.settings.minDollarVol / 1e6,
       refresh: $('#be-refresh').checked,
-      saveCsv: $('#be-savecsv').checked
+      saveCsv: $('#be-savecsv').checked,
+      fundamentals: $('#be-fund').checked
     };
     LS.set('backend', { universe: body.universe, sessions: body.sessions, top: body.top,
-                        url: $('#be-url').value.trim() });
+                        url: $('#be-url').value.trim(), fundamentals: body.fundamentals });
 
     beFetchJson('/api/fetch', {
       method: 'POST',
@@ -871,7 +1132,8 @@
   function loadBackendPayload(data, status) {
     if (!data || !data.symbols || !data.symbols.length) { beMsg('The backend returned no symbols.', true); return; }
     state.universe = data.symbols.map(function (s) {
-      return { symbol: s.symbol, name: s.name || '', marketCap: s.marketCap || 0, bars: beBars(s.bars) };
+      return { symbol: s.symbol, name: s.name || '', marketCap: s.marketCap || 0,
+               fundamentals: s.fundamentals || null, bars: beBars(s.bars) };
     });
     state.indexBars = data.index ? beBars(data.index.bars) : null;
     state.source = 'backend';
@@ -893,7 +1155,9 @@
     syncDateInput(b);
     renderProvenance();
     var dropped = p.dropped ? Object.keys(p.dropped).length : 0;
+    var withFund = state.universe.filter(function (u) { return u.fundamentals; }).length;
     beMsg('Loaded ' + state.universe.length.toLocaleString() + ' symbols' +
+      (withFund ? ' (' + withFund + ' with earnings data)' : '') +
       (dropped ? ' (' + dropped.toLocaleString() + ' dropped by the liquidity gates)' : '') +
       ((status && status.cached) ? ' — from today\'s cache.' : '.') +
       ((status && status.savedCsv) ? ' Saved ' + status.savedCsv + '.' : ''), false);
@@ -1042,6 +1306,9 @@
     $('#be-url').addEventListener('change', beHealth);
     $('#tab-backend').addEventListener('click', function () { if (!BE.busy) beHealth(); });
     $('#asof').addEventListener('change', function () { state.asOf = this.value; run(); });
+    ['kq', 'mm', 'both'].forEach(function (k) {
+      $('#scr-' + k).addEventListener('click', function () { setScreener(k); });
+    });
     $('#view-cards').addEventListener('click', function () { setView('cards'); });
     $('#view-table').addEventListener('click', function () { setView('table'); });
     $('#show-rejects').addEventListener('change', function () { state.showRejects = this.checked; render(); });
@@ -1093,6 +1360,7 @@
     $('#be-sessions').value = be.sessions || 252;
     $('#be-top').value = isFinite(be.top) ? be.top : 300;
     $('#be-url').value = be.url || '';
+    $('#be-fund').checked = !!be.fundamentals;
 
     $('#provider').value = LS.get('provider', 'fmp');
     $('#apikey').value = LS.get('apikey', '');
@@ -1110,6 +1378,17 @@
     ['breakout', 'ep', 'parabolic'].forEach(function (k) { $('#setup-' + k).checked = state.settings.setups[k]; });
   }
 
+  function setScreener(v) {
+    state.screener = v;
+    LS.set('screener', v);
+    ['kq', 'mm', 'both'].forEach(function (k) { $('#scr-' + k).classList.toggle('on', k === v); });
+    // Switching screeners resets a sort that no longer has a column.
+    if (state.sort.key && !columns().some(function (c) { return c.sort === state.sort.key; })) {
+      state.sort = { key: '', dir: 'desc' };
+    }
+    render();
+  }
+
   function setView(v) {
     state.view = v;
     $('#view-cards').classList.toggle('on', v === 'cards');
@@ -1120,6 +1399,8 @@
   /* ------------------------------------------------------------- kick off */
   var saved = LS.get('settings', null);
   if (saved && typeof saved === 'object') state.settings = Object.assign(state.settings, saved);
+  state.screener = LS.get('screener', 'kq');
+  state.pivotView = LS.get('pivotView', 'auto');
   wire();
   wireValues();
   beHealth();

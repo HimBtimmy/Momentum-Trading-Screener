@@ -167,6 +167,10 @@ def options_from_request(body: dict, defaults: argparse.Namespace) -> argparse.N
     args.min_turnover = _num(body.get("minTurnover"), defaults.min_turnover, 0, 1e5)
     args.min_market_cap = _num(body.get("minMarketCap"), defaults.min_market_cap, 0, 1e13)
     args.chunk_size = int(_num(body.get("chunkSize"), defaults.chunk_size, 1, 500))
+    # The Minervini screen's one non-technical test. Off by default because it
+    # costs a request per ticker; the browser leaves c6 unassessed without it.
+    args.fundamentals = bool(body.get("fundamentals", False))
+    args.fundamentals_limit = int(_num(body.get("fundamentalsLimit"), 400, 1, 3000))
     args.sleep = _num(body.get("sleep"), defaults.sleep, 0, 30)
     args.no_adjust = bool(body.get("noAdjust", False))
 
@@ -186,7 +190,8 @@ def cache_key(args: argparse.Namespace) -> str:
         "universe": args.universe, "source": args.source, "sessions": args.sessions,
         "top": args.top, "min_price": args.min_price, "min_turnover": args.min_turnover,
         "min_market_cap": args.min_market_cap, "index": args.index,
-        "adjust": not args.no_adjust, "day": time.strftime("%Y-%m-%d"),
+        "adjust": not args.no_adjust, "fundamentals": args.fundamentals,
+        "day": time.strftime("%Y-%m-%d"),
     }, sort_keys=True)
     return hashlib.sha1(ident.encode()).hexdigest()[:16]
 
@@ -195,7 +200,8 @@ def cache_key(args: argparse.Namespace) -> str:
 # Dataset payload
 # --------------------------------------------------------------------------- #
 
-def to_payload(result: vti.BuildResult, args: argparse.Namespace) -> dict:
+def to_payload(result: vti.BuildResult, args: argparse.Namespace,
+               fundamentals: dict | None = None) -> dict:
     """Pack the build into the compact JSON the app loads.
 
     Bars are arrays, not objects: ``["2026-09-11", o, h, l, c, v]``. At a few
@@ -211,18 +217,26 @@ def to_payload(result: vti.BuildResult, args: argparse.Namespace) -> dict:
         ])
 
     holdings = {h.ticker: h for h in result.universe.holdings}
+    fundamentals = fundamentals or {}
+    meta["fundamentals"] = len(fundamentals)
     index_symbol = result.universe.index_symbol
     symbols = []
     for ticker, bars in sorted(by_symbol.items()):
         if ticker == index_symbol:
             continue
         holding = holdings.get(ticker)
-        symbols.append({
+        row = {
             "symbol": ticker,
             "name": holding.name if holding and holding.name != ticker else "",
             "marketCap": round(holding.market_cap) if holding and holding.market_cap else 0,
             "bars": bars,
-        })
+        }
+        fund = fundamentals.get(ticker)
+        if fund:
+            row["fundamentals"] = {"epsYoY": fund.get("eps_yoy"),
+                                   "salesYoY": fund.get("sales_yoy"),
+                                   "quarter": fund.get("quarter", "")}
+        symbols.append(row)
 
     last_dates = [s["bars"][-1][0] for s in symbols if s["bars"]]
     return {
@@ -258,15 +272,23 @@ def run_job(job: Job, args: argparse.Namespace, save_csv: bool) -> None:
             if job.cancel:
                 raise vti.Cancelled()
             result = vti.build_dataset(args, progress)
+            funds = {}
+            if args.fundamentals:
+                candidates = vti.ma_stack_symbols(
+                    result.rows, exclude=[result.universe.index_symbol])
+                progress("fundamentals", 0, len(candidates),
+                         f"{len(candidates)} names pass the MA stack")
+                funds = vti.fetch_fundamentals(candidates, progress=progress,
+                                               limit=args.fundamentals_limit)
             progress("packing", result.kept, result.kept, "packing the dataset")
-            payload = to_payload(result, args)
+            payload = to_payload(result, args, funds)
 
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         cached.write_text(json.dumps(payload), encoding="utf-8")
 
         if save_csv:
             out = ROOT / "data" / f"universe-{time.strftime('%Y%m%d')}.csv"
-            vti.write_csv(out, result.rows, {h.ticker: h for h in result.universe.holdings})
+            vti.write_csv(out, result.rows, {h.ticker: h for h in result.universe.holdings}, funds)
             with job.lock:
                 job.saved_csv = str(out.relative_to(ROOT))
             LOG.info("wrote %s", out)
