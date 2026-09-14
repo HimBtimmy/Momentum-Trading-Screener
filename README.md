@@ -211,6 +211,11 @@ tools/
   build-datasets.mjs  builds every dataset; prints a screen as a smoke test
   summary-content.mjs the executive summary as structured content
   build-summary.mjs   renders the summary to HTML and Markdown
+tests/
+  run.py              runs the suite; see tests/README.md
+  _harness.py         paths, tallies, and a Chromium launcher that skips cleanly
+  stub_yfinance.py    the price vendor, stubbed — no test ever touches the network
+CLAUDE.md             standing notes: the invariants, and why they are invariants
 ```
 
 Regenerate everything:
@@ -219,6 +224,23 @@ Regenerate everything:
 node tools/build-datasets.mjs
 node tools/build-summary.mjs
 ```
+
+## Tests
+
+```bash
+python3 tests/run.py            # everything (~2 min, needs a browser)
+python3 tests/run.py --quick    # engine, pipeline and backend only (~5 s)
+```
+
+Plain scripts, no test framework, no network: the price vendor is stubbed with a
+frame shaped exactly the way `yfinance` shapes one, and everything downstream of
+that call is the real code. Tests that cannot run on a given machine — no
+Playwright, no browser, no pandas — report `SKIP` rather than failing, so a
+partial toolchain still gets a useful signal. What each test covers is listed in
+[tests/README.md](tests/README.md).
+
+If you are working on this with someone else, run `--quick` before every commit
+and the full suite before pushing.
 
 ## Not investment advice
 

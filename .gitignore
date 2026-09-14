@@ -11,3 +11,6 @@ __pycache__/
 *.pyc
 node_modules/
 .DS_Store
+
+# Scratch space for the test suite
+tests/.tmp/
