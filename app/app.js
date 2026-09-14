@@ -129,10 +129,10 @@
 
   function emptyMessage(res) {
     if (state.screener === 'both') {
-      return 'Nothing is eligible on both screens today. That is the usual answer: his screen wants a flag ' +
-        'about to break, the trend template wants a Stage 2 leader with the quality tests behind it, and the ' +
-        'overlap is genuinely rare — ' + (res.counts.eligible || 0) + ' qualify on his screen and ' +
-        (res.counts.mmEligible || 0) + ' on the template.';
+      return 'Nothing is eligible on both screens today. That is the usual answer: the Kullamägi screen wants ' +
+        'a flag about to break, the Minervini trend template wants a Stage 2 leader with the quality tests ' +
+        'behind it, and the overlap is genuinely rare — ' + (res.counts.eligible || 0) +
+        ' qualify on the Kullamägi side and ' + (res.counts.mmEligible || 0) + ' on the template.';
     }
     if (state.screener === 'mm') {
       return 'No name reaches tier A on the trend template today. Tier B and C candidates are in the table — ' +
