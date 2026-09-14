@@ -72,6 +72,13 @@ Notes that matter in practice:
 * **Results are cached for the day**, keyed by the options you chose, under `data/cache/`
   (git-ignored). The second fetch of the same thing is instant. Tick *Ignore today's
   cache* to force a re-download.
+* **What gets dropped, and why.** The count in the app's message is not all liquidity.
+  A name is dropped before it ever reaches the screener when the vendor returned nothing,
+  when its bars are unusable, when it has fewer than `--min-sessions` (130) clean sessions,
+  when its last close is under `--min-price` ($5), or when its 20-day average turnover is
+  under `--min-turnover` ($5M/day). The last two come from **Risk & filters** in the app —
+  Min price $ and Min turnover $M — so raising either drops more names on the next fetch.
+  Per-symbol reasons are in `provenance.dropped` and in the `.meta.json` beside a saved CSV.
 * **Bars travel as arrays** — `["2026-09-11", open, high, low, close, volume]`. Named keys
   would repeat the same six words across a few hundred thousand bars.
 * **Earnings growth is optional and separate.** Tick *Fetch earnings growth* (or pass

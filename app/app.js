@@ -1123,6 +1123,35 @@
       .catch(function () { /* the poll will report whatever happened */ });
   }
 
+  /* "Dropped" lumped five different reasons together and called them all
+   * liquidity, which is only true of two of them. Say which. */
+  var DROP_BUCKETS = [
+    [/^no data returned/, 'no data from the vendor'],
+    [/^no usable bars/, 'no usable bars'],
+    [/^only \d+ sessions/, 'too little history'],
+    [/^last close/, 'below the price floor'],
+    [/^turnover/, 'below the turnover floor']
+  ];
+
+  function dropSummary(dropped) {
+    var keys = dropped ? Object.keys(dropped) : [];
+    if (!keys.length) return '';
+    var counts = {};
+    keys.forEach(function (k) {
+      var reason = String(dropped[k]);
+      var label = 'other';
+      for (var i = 0; i < DROP_BUCKETS.length; i++) {
+        if (DROP_BUCKETS[i][0].test(reason)) { label = DROP_BUCKETS[i][1]; break; }
+      }
+      counts[label] = (counts[label] || 0) + 1;
+    });
+    var parts = Object.keys(counts)
+      .sort(function (a, b) { return counts[b] - counts[a]; })
+      .map(function (label) { return counts[label].toLocaleString() + ' ' + label; });
+    return ' ' + keys.length.toLocaleString() + (keys.length === 1 ? ' name was' : ' names were') +
+      ' dropped before screening: ' + parts.join(', ') + '.';
+  }
+
   function beMsg(text, bad) {
     var el = $('#be-msg');
     el.hidden = !text;
@@ -1164,13 +1193,12 @@
     state.asOf = b.max;
     syncDateInput(b);
     renderProvenance();
-    var dropped = p.dropped ? Object.keys(p.dropped).length : 0;
     var withFund = state.universe.filter(function (u) { return u.fundamentals; }).length;
     beMsg('Loaded ' + state.universe.length.toLocaleString() + ' symbols' +
-      (withFund ? ' (' + withFund + ' with earnings data)' : '') +
-      (dropped ? ' (' + dropped.toLocaleString() + ' dropped by the liquidity gates)' : '') +
+      (withFund ? ', ' + withFund.toLocaleString() + ' with earnings data' : '') +
       ((status && status.cached) ? ' — from today\'s cache.' : '.') +
-      ((status && status.savedCsv) ? ' Saved ' + status.savedCsv + '.' : ''), false);
+      ((status && status.savedCsv) ? ' Saved ' + status.savedCsv + '.' : '') +
+      dropSummary(p.dropped), false);
     run();
   }
 
