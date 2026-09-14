@@ -961,7 +961,7 @@
    * CORS headers and a browser cannot call them directly. The screening still
    * happens here: the backend returns bars, not verdicts.
    */
-  var BE = { job: null, timer: null, busy: false };
+  var BE = { job: null, timer: null, busy: false, cancelling: false };
 
   function beBase() {
     var url = ($('#be-url') && $('#be-url').value || '').trim().replace(/\/+$/, '');
@@ -1037,8 +1037,10 @@
 
   function beSetBusy(busy) {
     BE.busy = busy;
+    if (busy) BE.cancelling = false;
     $('#be-fetch').disabled = busy;
     $('#be-cancel').hidden = !busy;
+    $('#be-cancel').disabled = false;
     $('#be-progress').hidden = !busy;
   }
 
@@ -1065,6 +1067,7 @@
 
   function beStartFetch() {
     if (BE.busy) return;
+    BE.job = null;          // never carry the previous run's id into this one
     beSetBusy(true);
     beMsg('', false);
     $('#be-plabel').textContent = 'Starting…';
@@ -1089,6 +1092,8 @@
       body: JSON.stringify(body)
     }).then(function (started) {
       BE.job = started.id;
+      // Cancel can be clicked before the id arrives; honour it now that it has.
+      if (BE.cancelling) beSendCancel();
       BE.timer = setInterval(bePoll, 700);
       bePoll();
     }).catch(function (err) {
@@ -1118,7 +1123,17 @@
   }
 
   function beCancel() {
-    if (!BE.job) return;
+    if (BE.cancelling) return;
+    // The button is offered as soon as the run starts, which is a moment before
+    // the server has told us the job id. Record the intent either way, so an
+    // early click is not silently dropped.
+    BE.cancelling = true;
+    $('#be-cancel').disabled = true;
+    $('#be-plabel').textContent = 'Cancelling…';
+    if (BE.job) beSendCancel();
+  }
+
+  function beSendCancel() {
     beFetchJson('/api/jobs/' + BE.job + '/cancel', { method: 'POST' })
       .catch(function () { /* the poll will report whatever happened */ });
   }
