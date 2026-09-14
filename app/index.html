@@ -116,6 +116,8 @@ label.field { display: flex; flex-direction: column; gap: 5px; }
 label.field > span {
   font: 500 9.5px/1 var(--font-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--ink-muted);
 }
+label.field > span i { font-style: normal; letter-spacing: .06em; opacity: .72; text-transform: none; }
+input::placeholder { color: var(--ink-muted); opacity: .7; }
 input[type="text"], input[type="number"], input[type="date"], input[type="password"], select, textarea {
   font: 500 13.5px var(--font-mono); color: var(--ink-primary); background: var(--surface-2);
   border: 1px solid var(--rule); border-radius: 2px; padding: 7px 8px;
@@ -548,7 +550,10 @@ python3 tools/server.py --open</code></pre>
       <label class="field"><span>Symbol cap</span><input type="number" id="be-top" min="0" step="50"
         title="largest N by weight or market cap; 0 downloads the whole universe"></label>
       <label class="field"><span>Sessions</span><input type="number" id="be-sessions" min="130" max="2000" step="1"></label>
-      <label class="field"><span>Backend URL</span><input type="text" id="be-url" size="21" spellcheck="false"></label>
+      <label class="field"><span>Backend URL <i>(only if you changed the port)</i></span>
+        <input type="text" id="be-url" size="21" spellcheck="false"
+          placeholder="blank = http://127.0.0.1:8765"
+          title="Leave blank unless you started the server on another port. Scheme and port only — no path."></label>
       <button class="go" id="be-fetch" type="button">Fetch from yfinance</button>
       <button class="go ghost" id="be-cancel" type="button" hidden>Cancel</button>
     </div>

@@ -66,6 +66,11 @@ If that says nothing is answering:
 | `Address already in use` | It is already running. Open the URL, or use `--port 8766`. |
 | Banner appears, browser does not | `--open` cannot always find a browser (SSH, WSL, headless). Open the printed URL yourself. |
 
+**Backend URL field:** leave it blank. Blank works both when the page is served by the
+backend and when you open `app/index.html` straight off disk (it falls back to
+`http://127.0.0.1:8765`). Fill it in only if you started the server on another port —
+`http://127.0.0.1:8766`, scheme and port only, **no path** (`/api` there breaks it).
+
 ## The strategy in one table
 
 | | Breakout | Episodic pivot | Parabolic short |
