@@ -694,6 +694,7 @@
   }
 
   function closeDetail() {
+    hideTip();
     state.detail = null;
     $('#detail').hidden = true;
     $('#detail-body').innerHTML = '';
@@ -830,7 +831,16 @@
   }
 
   /* --------------------------------------------------------------- charts */
+  /* The tooltip lives on document.body and is driven by one chart at a time, so
+   * anything that removes a chart from under the cursor has to put it away: a
+   * destroyed <svg> never fires mouseleave. */
+  function hideTip() {
+    if (tip) tip.hidden = true;
+    $$('.qm-cross').forEach(function (l) { l.style.display = 'none'; });
+  }
+
   function attachCharts(root, prefix) {
+    hideTip();
     var res = state.lastRun;
     if (!res) return;
     $$('.chart', root || $('#results')).forEach(function (host) {

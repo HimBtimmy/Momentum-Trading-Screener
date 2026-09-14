@@ -55,6 +55,13 @@
 }
 
 * { box-sizing: border-box; }
+/* A class that sets `display` beats the browser's own [hidden] rule, because an
+ * author stylesheet outranks the user-agent one. Every element this app hides
+ * by attribute — the tooltip (display:grid), the summary strip (grid), the
+ * regime banner (flex), the detail overlay (flex) — therefore needs this to
+ * stay hidden. Published artifacts inject the same rule, which is why the
+ * tooltip hid there and not in a local checkout. */
+[hidden] { display: none !important; }
 body {
   margin: 0; background: var(--paper); color: var(--ink-primary);
   font: 400 15.5px/1.55 var(--font-body); -webkit-font-smoothing: antialiased;
@@ -457,7 +464,6 @@ table.results tr.rej td { opacity: .78; }
 
 /* ---- detail overlay ---------------------------------------------------- */
 body.modal-open { overflow: hidden; }
-.overlay[hidden] { display: none; }   /* display:flex below would otherwise beat [hidden] */
 .overlay {
   position: fixed; inset: 0; z-index: 100; background: color-mix(in srgb, var(--ink-primary) 55%, transparent);
   display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; overflow-y: auto;
