@@ -527,6 +527,8 @@ def build_parser() -> argparse.ArgumentParser:
                         help="interface to bind (default: 127.0.0.1, i.e. this machine only)")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--open", action="store_true", help="open the app in a browser")
+    parser.add_argument("--check", action="store_true",
+                        help="ask an already-running server whether it is alive, then exit")
     parser.add_argument("--default-top", type=int, default=0,
                         help="prefill the symbol cap in the form (0 = the whole universe)")
     parser.add_argument("--sessions", type=int, default=252)
@@ -551,10 +553,60 @@ def cli_defaults(args: argparse.Namespace) -> argparse.Namespace:
     return base
 
 
+def say(*lines: str) -> None:
+    """Startup output goes to stdout, flushed.
+
+    This is the only feedback the program gives before it blocks in
+    serve_forever(), so it must not sit in a buffer or land on a stream someone
+    has redirected away.
+    """
+    for line in lines:
+        print(line, flush=True)
+
+
+def open_browser_later(url: str, delay: float = 0.4) -> None:
+    """Open the browser off the main thread.
+
+    webbrowser.GenericBrowser waits for the child process to exit, so when
+    $BROWSER points at a wrapper this call can block for as long as the browser
+    lives — with the socket bound but nothing accepting on it, which looks
+    exactly like a server that started and then hung.
+    """
+    def go() -> None:
+        time.sleep(delay)
+        try:
+            if not webbrowser.open(url):
+                say(f"  (could not open a browser automatically — open {url} yourself)")
+        except Exception as exc:  # noqa: BLE001
+            say(f"  (could not open a browser automatically: {exc} — open {url} yourself)")
+
+    threading.Thread(target=go, name="open-browser", daemon=True).start()
+
+
+def check_server(host: str, port: int) -> int:
+    """Ask a already-running instance whether it is alive. `--check`."""
+    import urllib.request
+    url = f"http://{host}:{port}/api/health"
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            health = json.loads(response.read())
+    except Exception as exc:  # noqa: BLE001
+        say(f"No server answering at {url}", f"  ({exc})",
+            "", "Start one with:  python3 tools/server.py")
+        return 1
+    say(f"Server is up at http://{host}:{port}/app/index.html",
+        f"  yfinance {health.get('yfinance') or 'MISSING'} · pandas {health.get('pandas') or 'MISSING'}",
+        f"  cached builds: {health.get('cache', {}).get('entries', 0)}")
+    return 0
+
+
 def serve(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(levelname)-7s %(message)s", stream=sys.stderr)
+
+    if args.check:
+        return check_server(args.host, args.port)
 
     if args.host not in ("127.0.0.1", "localhost", "::1") and not os.environ.get("QM_ALLOW_PUBLIC"):
         LOG.error("refusing to bind %s: this server runs builds on demand and is meant for "
@@ -562,24 +614,40 @@ def serve(argv: list[str] | None = None) -> int:
         return 2
 
     Handler.defaults = cli_defaults(args)
-    httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     url = f"http://{args.host}:{args.port}/app/index.html"
+    try:
+        httpd = ThreadingHTTPServer((args.host, args.port), Handler)
+    except OSError as exc:
+        say(f"Could not listen on {args.host}:{args.port} — {exc}")
+        if exc.errno in (48, 98, 10048):        # EADDRINUSE on macOS / Linux / Windows
+            say("",
+                "Something is already using that port. If it is this server, it is already "
+                "running —",
+                f"  open {url}",
+                "Otherwise pick another port:  python3 tools/server.py --port 8766")
+        return 2
 
     try:
         import yfinance  # noqa: F401
-        ready = "yfinance ready"
+        ready = f"yfinance {yfinance.__version__} ready"
     except Exception as exc:  # noqa: BLE001
         ready = f"yfinance NOT importable ({exc}) — pip install -r tools/requirements.txt"
 
-    print(f"\n  Momentum screener backend\n  {url}\n  {ready}\n"
-          f"  Ctrl-C to stop\n", file=sys.stderr)
+    say("",
+        "  Momentum screener backend",
+        f"  Serving   {url}",
+        f"  Data      {ready}",
+        "  Stop      Ctrl-C",
+        "",
+        "  This window stays open while the server runs — that is normal. Open the URL",
+        "  above in a browser, then use the Backend (yfinance) tab.",
+        "")
     if args.open:
-        webbrowser.open(url)
+        open_browser_later(url)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("", file=sys.stderr)
-        LOG.info("stopping")
+        say("", "stopped")
     finally:
         httpd.server_close()
     return 0

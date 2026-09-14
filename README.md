@@ -46,6 +46,26 @@ Worth knowing:
 * **No backend?** The app still works standalone: open `app/index.html` for the bundled
   demo universe, or import a CSV built by `tools/fetch_vti_universe.py`.
 
+### If `python3 tools/server.py` looks like it did nothing
+
+The server prints a short banner and then **stays open, doing nothing visible** — that is
+what running means. Your prompt will not come back until you press Ctrl-C. Check it from a
+second terminal:
+
+```bash
+python3 tools/server.py --check      # asks a running server whether it is alive
+```
+
+If that says nothing is answering:
+
+| Symptom | Cause |
+| --- | --- |
+| No output at all, prompt returns instantly | On Windows, `python3` is a Microsoft Store stub that exits silently. Use `py -3 tools/server.py` or `python tools/server.py`. |
+| `can't open file .../server.py` | Wrong directory — run it from the repository root. |
+| `No such file or directory` for `server.py` | Older checkout: `git pull` on `claude/gallant-archimedes-jovbix`. |
+| `Address already in use` | It is already running. Open the URL, or use `--port 8766`. |
+| Banner appears, browser does not | `--open` cannot always find a browser (SSH, WSL, headless). Open the printed URL yourself. |
+
 ## The strategy in one table
 
 | | Breakout | Episodic pivot | Parabolic short |
